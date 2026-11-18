@@ -1,27 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
   Building,
-  Users,
   FileText,
   Bell,
-  Layers,
   Tags,
   CheckCircle2
 } from 'lucide-react';
 import { initialSettings } from '../../data/mockData';
 import GeneralSettingsTab from './components/GeneralSettingsTab';
-import UsersAndRolesPage from '../Users/UsersAndRolesPage';
 import AuditLogTab from './components/AuditLogTab';
 import NotificationsSettingsTab from './components/NotificationsSettingsTab';
-import IntegrationsTab from './components/IntegrationsTab';
 import StatusesAndCategoriesTab from './components/StatusesAndCategoriesTab';
 
 const SETTINGS_SUBTABS = [
   { id: 'general', label: 'General', icon: Building, description: 'Company profile, branding, currency & oil change interval' },
-  { id: 'users', label: 'Users & Roles', icon: Users, description: 'Staff directory & 7-role access permissions matrix' },
   { id: 'audit', label: 'Audit Log', icon: FileText, description: 'Tamper-proof event stream & data change ledger' },
   { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Email/SMS triggers, lead times, deduplication & alert history' },
-  { id: 'integrations', label: 'Integrations', icon: Layers, description: 'QuickBooks, payment gateways, e-signatures & Microsoft 365' },
   { id: 'categories', label: 'Statuses & Categories', icon: Tags, description: 'Vehicle statuses, expense categories & ticket review states' },
 ];
 
@@ -120,23 +114,13 @@ export default function SettingsPage({ activeSubTab, onSubTabChange }) {
           />
         )}
 
-        {/* 2. Users and Roles (Reusing existing UsersAndRolesPage) */}
-        {activeTab === 'users' && (
-          <div className="bg-transparent">
-            <UsersAndRolesPage />
-          </div>
-        )}
-
-        {/* 3. Audit Log */}
+        {/* 2. Audit Log */}
         {activeTab === 'audit' && <AuditLogTab />}
 
-        {/* 4. Notifications */}
+        {/* 3. Notifications */}
         {activeTab === 'notifications' && <NotificationsSettingsTab />}
 
-        {/* 5. Integrations */}
-        {activeTab === 'integrations' && <IntegrationsTab />}
-
-        {/* 6. Statuses and Categories */}
+        {/* 4. Statuses and Categories */}
         {activeTab === 'categories' && <StatusesAndCategoriesTab />}
       </div>
     </div>
