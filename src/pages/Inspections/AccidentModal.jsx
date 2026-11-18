@@ -15,6 +15,8 @@ import { useFleet } from '../../context/FleetContext';
 import { initialPolicies } from '../../data/mockData';
 import { getCurrencySymbol, formatCurrency } from '../../utils/formatters';
 
+const FLEET_INSURANCE_POLICIES = initialPolicies;
+
 export default function AccidentModal({
   isOpen,
   onClose,
