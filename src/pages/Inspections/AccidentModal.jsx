@@ -36,6 +36,8 @@ const FLEET_INSURANCE_POLICIES = [
   }
 ];
 
+const FLEET_INSURANCE_POLICIES = initialPolicies;
+
 export default function AccidentModal({
   isOpen,
   onClose,

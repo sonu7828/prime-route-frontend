@@ -1,4 +1,5 @@
 export * from './client';
+export * from './accountingApi';
 export * from './vehiclesApi';
 export * from './driversApi';
 export * from './rentalsApi';
