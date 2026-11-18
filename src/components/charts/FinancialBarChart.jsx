@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -11,7 +11,6 @@ import { DollarSign, ArrowUpRight } from 'lucide-react';
 import { financialSummaryData } from '../../data/mockData';
 
 export default function FinancialBarChart({ data: propData }) {
-  const [selectedYear, setSelectedYear] = useState('This Year');
   const summary = propData || financialSummaryData;
   const bars = summary.monthlyBars || financialSummaryData.monthlyBars;
 
@@ -24,21 +23,6 @@ export default function FinancialBarChart({ data: propData }) {
             <DollarSign className="w-4 h-4" />
           </div>
           <h3 className="font-bold text-[#0A1E42] text-base">Financial Summary</h3>
-        </div>
-
-        <div className="relative">
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-200 rounded-lg px-2.5 py-1.5 pr-6 appearance-none focus:outline-none focus:ring-1 focus:ring-[#075EE8] cursor-pointer"
-          >
-            <option value="This Year">This Year</option>
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
-          </select>
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">
-            ▼
-          </span>
         </div>
       </div>
 
