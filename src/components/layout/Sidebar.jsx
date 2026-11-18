@@ -22,8 +22,7 @@ import {
   Tags,
   FileText,
   FileCheck,
-  Bell,
-  Layers
+  Bell
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -73,10 +72,8 @@ export default function Sidebar({
 
   const settingsSubItems = [
     { id: 'general', label: 'General', icon: Building },
-    { id: 'users', label: 'Users & Roles', icon: Users },
     { id: 'audit', label: 'Audit Log', icon: FileText },
     { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'integrations', label: 'Integrations', icon: Layers },
     { id: 'categories', label: 'Statuses & Categories', icon: Tags },
   ];
 

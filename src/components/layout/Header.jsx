@@ -260,7 +260,7 @@ export default function Header({
               type="button"
               onClick={() => {
                 setShowProfileModal(false);
-                onNavigate('settings', 'users');
+                onNavigate('users');
               }}
               className="text-xs text-[#075EE8] font-bold hover:underline cursor-pointer"
             >
