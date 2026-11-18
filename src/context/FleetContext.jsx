@@ -1,11 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  initialRentals,
-  initialVehicles,
-  initialDrivers,
-  initialInspections,
-  initialAccidents
-} from '../data/mockData';
+
 import {
   vehiclesApi,
   driversApi,
@@ -20,8 +14,8 @@ export function FleetProvider({ children }) {
   const [rentals, setRentals] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
-  const [inspections, setInspections] = useState(initialInspections);
-  const [accidents, setAccidents] = useState(initialAccidents);
+  const [inspections, setInspections] = useState([]);
+  const [accidents, setAccidents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -35,8 +29,8 @@ export function FleetProvider({ children }) {
           vehiclesApi.getVehicles().catch(() => null),
           driversApi.getDrivers().catch(() => null),
           rentalsApi.getRentals().catch(() => null),
-          inspectionsApi.getInspections().catch(() => initialInspections),
-          inspectionsApi.getAccidents().catch(() => initialAccidents)
+          inspectionsApi.getInspections().catch(() => []),
+          inspectionsApi.getAccidents().catch(() => [])
         ]);
 
         if (isMounted) {

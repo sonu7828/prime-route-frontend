@@ -1,50 +1,112 @@
-import { delay, getCachedOrInit, setCached, ApiError } from './client';
-import { initialInspections, initialAccidents } from '../data/mockData';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
-const INSPECTIONS_CACHE = 'prime_route_inspections';
-const ACCIDENTS_CACHE = 'prime_route_accidents';
+function getAuthHeaders() {
+  const token = localStorage.getItem('primeroute_access_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}
+
+async function request(endpoint, options = {}) {
+  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      ...getAuthHeaders(),
+      ...(options.headers || {})
+    }
+  });
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json.success === false) {
+    const errorMsg = json?.error?.message || json?.message || `Request failed with status ${res.status}`;
+    const err = new Error(errorMsg);
+    err.status = res.status;
+    err.code = json?.error?.code;
+    throw err;
+  }
+  return json;
+}
 
 export const inspectionsApi = {
-  async getInspections() {
-    await delay();
-    return [...getCachedOrInit(INSPECTIONS_CACHE, () => [...initialInspections])];
+  async getInspections(params = {}) {
+    const query = new URLSearchParams();
+    if (params.vehicleId) query.append('vehicleId', params.vehicleId);
+    if (params.status && params.status !== 'All') query.append('status', params.status);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await request(`/inspections${qs}`);
+    return res.data || [];
   },
 
-  async getAccidents() {
-    await delay();
-    return [...getCachedOrInit(ACCIDENTS_CACHE, () => [...initialAccidents])];
+  async getInspectionById(id) {
+    const res = await request(`/inspections/${id}`);
+    return res.data;
   },
 
   async createInspection(inspectionData) {
-    await delay();
-    const list = getCachedOrInit(INSPECTIONS_CACHE, () => [...initialInspections]);
+    const res = await request('/inspections', {
+      method: 'POST',
+      body: JSON.stringify(inspectionData)
+    });
+    return res.data;
+  },
 
-    const newInspection = {
-      id: inspectionData.id || `INS-${String(list.length + 101)}`,
-      date: new Date().toISOString().split('T')[0],
-      status: inspectionData.status || 'Completed',
-      ...inspectionData
-    };
+  async updateInspection(id, updates) {
+    const res = await request(`/inspections/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+    return res.data;
+  },
 
-    const updated = [newInspection, ...list];
-    setCached(INSPECTIONS_CACHE, updated);
-    return { ...newInspection };
+  async deleteInspection(id) {
+    const res = await request(`/inspections/${id}`, {
+      method: 'DELETE'
+    });
+    return res;
+  },
+
+  async getAccidents() {
+    const res = await request('/inspections/accidents');
+    return res.data || [];
+  },
+
+  async getAccidentById(id) {
+    const res = await request(`/inspections/accidents/${id}`);
+    return res.data;
+  },
+
+  async createAccident(accidentData) {
+    const res = await request('/inspections/accidents', {
+      method: 'POST',
+      body: JSON.stringify(accidentData)
+    });
+    return res.data;
   },
 
   async reportAccident(accidentData) {
-    await delay();
-    const accidents = getCachedOrInit(ACCIDENTS_CACHE, () => [...initialAccidents]);
+    return this.createAccident(accidentData);
+  },
 
-    const newAccident = {
-      id: accidentData.id || `ACC-${String(accidents.length + 1).padStart(3, '0')}`,
-      date: new Date().toISOString().split('T')[0],
-      status: accidentData.status || 'Reported',
-      ...accidentData
-    };
+  async updateAccident(id, updates) {
+    const res = await request(`/inspections/accidents/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+    return res.data;
+  },
 
-    const updated = [newAccident, ...accidents];
-    setCached(ACCIDENTS_CACHE, updated);
-    return { ...newAccident };
+  async deleteAccident(id) {
+    const res = await request(`/inspections/accidents/${id}`, {
+      method: 'DELETE'
+    });
+    return res;
+  },
+
+  async getInspectionStats() {
+    const res = await request('/inspections/stats');
+    return res.data;
   }
 };
 
+export default inspectionsApi;
