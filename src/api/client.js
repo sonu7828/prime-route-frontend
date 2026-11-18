@@ -12,17 +12,38 @@ export class ApiError extends Error {
   }
 }
 
-// In-memory persistent cache for mock data during user session
+// Persistent cache for mock data across user reloads using localStorage
 const memoryCache = new Map();
 
 export const getCachedOrInit = (key, initialFactory) => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const saved = window.localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        memoryCache.set(key, parsed);
+        return parsed;
+      }
+    } catch (e) {}
+  }
   if (!memoryCache.has(key)) {
     memoryCache.set(key, initialFactory());
   }
-  return memoryCache.get(key);
+  const data = memoryCache.get(key);
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {}
+  }
+  return data;
 };
 
 export const setCached = (key, data) => {
   memoryCache.set(key, data);
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {}
+  }
 };
 

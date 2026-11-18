@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   FolderArchive,
   FileText,
@@ -34,6 +34,7 @@ import ConfirmationModal from '../../components/common/ConfirmationModal';
 import UploadDocumentModal from './UploadDocumentModal';
 import DocumentPreviewModal from './DocumentPreviewModal';
 import RestrictedAccessModal from './RestrictedAccessModal';
+import { documentsApi } from '../../api/documentsApi';
 import { initialDocuments } from '../../data/mockData';
 import { formatDate } from '../../utils/formatters';
 import { useRole } from '../../context/RoleContext';
@@ -67,7 +68,44 @@ const CONTROLLED_TYPES = [
 export default function DocumentsPage() {
   const { currentRoleId, activeRole } = useRole();
 
-  const [documents, setDocuments] = useState(initialDocuments);
+  const STORAGE_KEY = 'primeroute_documents_data_v2';
+
+  const [documents, setDocuments] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
+
+  // Fetch live documents from backend MySQL database on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchFromDb() {
+      try {
+        const data = await documentsApi.getDocuments();
+        if (isMounted && Array.isArray(data)) {
+          setDocuments(data);
+        }
+      } catch (err) {
+        console.warn('Could not fetch documents from backend DB:', err);
+      }
+    }
+    fetchFromDb();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Sync to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+    } catch (e) {}
+  }, [documents]);
   const [typeFilter, setTypeFilter] = useState('All Types');
   const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -138,15 +176,27 @@ export default function DocumentsPage() {
     return filteredDocs.slice(start, start + pageSize);
   }, [filteredDocs, currentPage, pageSize]);
 
-  // Document Handlers
-  const handleSaveDoc = (newDoc) => {
-    setDocuments((prev) => [newDoc, ...prev]);
+  // Document Handlers (Saving and Deleting directly in backend MySQL database)
+  const handleSaveDoc = async (newDoc) => {
+    try {
+      const saved = await documentsApi.uploadDocument(newDoc);
+      setDocuments((prev) => [saved, ...prev.filter((d) => d.id !== saved.id)]);
+    } catch (err) {
+      console.error('Save doc to DB error:', err);
+      setDocuments((prev) => [newDoc, ...prev]);
+    }
   };
 
-  const handleDeleteDoc = () => {
+  const handleDeleteDoc = async () => {
     if (deletingDoc) {
-      setDocuments((prev) => prev.filter((d) => d.id !== deletingDoc.id));
+      const target = deletingDoc;
       setDeletingDoc(null);
+      setDocuments((prev) => prev.filter((d) => d.id !== target.id));
+      try {
+        await documentsApi.deleteDocument(target.dbId || target.id);
+      } catch (err) {
+        console.error('Delete doc from DB error:', err);
+      }
     }
   };
 
@@ -305,45 +355,10 @@ Digital Hash:    SHA-256 Verified Seal
       )}
 
       {/* Categories Bar & Search */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-[0_2px_12px_rgba(7,29,73,0.04)] flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Controlled Types Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-none">
-          {CONTROLLED_TYPES.map((t) => (
-            <button
-              key={t}
-              onClick={() => {
-                setTypeFilter(t);
-                setCurrentPage(1);
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 capitalize cursor-pointer ${
-                typeFilter === t
-                  ? 'bg-blue-600 text-white shadow-2xs'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="px-3 py-2 text-xs font-bold border border-slate-200 rounded-xl bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 cursor-pointer shrink-0"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Valid">Valid</option>
-            <option value="Expiring Soon">Expiring Soon</option>
-            <option value="Restricted">Restricted (Locked)</option>
-          </select>
-
-          {/* Search Bar */}
-          <div className="w-full md:w-72">
+      <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-[0_2px_12px_rgba(7,29,73,0.04)] space-y-3.5">
+        {/* Row 1: Search, Status Filter & View Mode Toggle */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="w-full sm:w-80 md:w-96">
             <SearchBar
               value={searchQuery}
               onChange={(val) => {
@@ -354,26 +369,62 @@ Digital Hash:    SHA-256 Verified Seal
             />
           </div>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center border border-slate-200 rounded-xl p-1 bg-slate-50 shrink-0">
-            <button
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition-all ${
-                viewMode === 'table' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
-              }`}
-              title="Table View"
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-3 py-2 text-xs font-bold border border-slate-200 rounded-xl bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 cursor-pointer shrink-0"
             >
-              <List className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all ${
-                viewMode === 'grid' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
-              }`}
-              title="Card Grid View"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
+              <option value="All">All Statuses</option>
+              <option value="Valid">Valid</option>
+              <option value="Expiring Soon">Expiring Soon</option>
+              <option value="Restricted">Restricted (Locked)</option>
+            </select>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center border border-slate-200 rounded-xl p-1 bg-slate-50 shrink-0">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
+                  }`}
+                title="Table View"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-400 hover:text-slate-700'
+                  }`}
+                title="Card Grid View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider line & Row 2: Controlled Types Filter Tabs */}
+        <div className="border-t border-slate-100 pt-3.5">
+          <div className="flex flex-wrap items-center gap-2 w-full">
+            {CONTROLLED_TYPES.map((t) => (
+              <button
+                key={t}
+                onClick={() => {
+                  setTypeFilter(t);
+                  setCurrentPage(1);
+                }}
+                className={`flex-1 min-w-fit text-center px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap capitalize cursor-pointer ${typeFilter === t
+                  ? 'bg-blue-600 text-white shadow-xs ring-2 ring-blue-500/20'
+                  : 'text-slate-600 bg-slate-50/80 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300'
+                  }`}
+              >
+                {t}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -456,9 +507,8 @@ Digital Hash:    SHA-256 Verified Seal
                         {doc.expiryDate ? (
                           <div>
                             <span
-                              className={`font-mono font-bold ${
-                                doc.status === 'Expiring Soon' ? 'text-amber-600' : 'text-slate-800'
-                              }`}
+                              className={`font-mono font-bold ${doc.status === 'Expiring Soon' ? 'text-amber-600' : 'text-slate-800'
+                                }`}
                             >
                               {formatDate(doc.expiryDate)}
                             </span>
@@ -500,11 +550,10 @@ Digital Hash:    SHA-256 Verified Seal
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => handleOpenPreview(doc)}
-                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                              isLocked
-                                ? 'text-amber-600 hover:bg-amber-50'
-                                : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
-                            }`}
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isLocked
+                              ? 'text-amber-600 hover:bg-amber-50'
+                              : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
+                              }`}
                             title={isLocked ? 'Restricted Access – Locked' : 'Preview Document'}
                           >
                             {isLocked ? <Lock className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -587,9 +636,8 @@ Digital Hash:    SHA-256 Verified Seal
                     <div className="flex justify-between">
                       <span className="text-slate-400">Expiry Date:</span>
                       <span
-                        className={`font-mono font-bold ${
-                          doc.status === 'Expiring Soon' ? 'text-amber-600' : 'text-slate-700'
-                        }`}
+                        className={`font-mono font-bold ${doc.status === 'Expiring Soon' ? 'text-amber-600' : 'text-slate-700'
+                          }`}
                       >
                         {doc.expiryDate ? formatDate(doc.expiryDate) : 'Permanent'}
                       </span>
@@ -604,9 +652,8 @@ Digital Hash:    SHA-256 Verified Seal
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
                   <button
                     onClick={() => handleOpenPreview(doc)}
-                    className={`font-semibold flex items-center gap-1 cursor-pointer ${
-                      isLocked ? 'text-amber-700 hover:underline' : 'text-[#075EE8] hover:underline'
-                    }`}
+                    className={`font-semibold flex items-center gap-1 cursor-pointer ${isLocked ? 'text-amber-700 hover:underline' : 'text-[#075EE8] hover:underline'
+                      }`}
                   >
                     {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     {isLocked ? 'Locked' : 'Preview'}
