@@ -12,7 +12,27 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
-import { initialPolicies } from '../../data/mockData';
+
+const FLEET_INSURANCE_POLICIES = [
+  {
+    id: 'POL-TRV-101',
+    insurer: 'Travelers Commercial Auto & Marine',
+    policyNumber: 'TRV-CA-9821034-25',
+    deductibleTerms: '$500 Collision Deductible'
+  },
+  {
+    id: 'POL-PRG-202',
+    insurer: 'Progressive Commercial Fleet',
+    policyNumber: 'PRG-FLT-8891204',
+    deductibleTerms: '$1,000 Comprehensive / Collision'
+  },
+  {
+    id: 'POL-FLT-303',
+    insurer: 'PrimeRoute Fleet Self-Insured Reserve',
+    policyNumber: 'FLT-INT-RES-01',
+    deductibleTerms: 'Direct Fleet Expense / Deductible Waived'
+  }
+];
 
 export default function AccidentModal({
   isOpen,
@@ -115,13 +135,13 @@ export default function AccidentModal({
   };
 
   const handlePolicyChange = (policyId) => {
-    const pol = initialPolicies.find((p) => p.id === policyId);
+    const pol = FLEET_INSURANCE_POLICIES.find((p) => p.id === policyId);
     if (pol) {
       setFormData((prev) => ({
         ...prev,
         linkedPolicyId: pol.id,
         insuranceCarrier: pol.insurer,
-        deductibleTerms: pol.deductibleTerms || pol.deductible
+        deductibleTerms: pol.deductibleTerms || '$500 Collision Deductible'
       }));
     } else {
       setFormData((prev) => ({ ...prev, linkedPolicyId: policyId }));
@@ -326,7 +346,7 @@ export default function AccidentModal({
                   onChange={(e) => handlePolicyChange(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-medium"
                 >
-                  {initialPolicies.map((p) => (
+                  {FLEET_INSURANCE_POLICIES.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.insurer} ({p.policyNumber})
                     </option>

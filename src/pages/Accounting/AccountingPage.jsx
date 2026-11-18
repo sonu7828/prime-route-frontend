@@ -34,7 +34,6 @@ import ExpenseApprovalModal from './components/ExpenseApprovalModal';
 import ExpenseCorrectionModal from './components/ExpenseCorrectionModal';
 import LoadingState from '../../components/common/LoadingState';
 import ErrorState from '../../components/common/ErrorState';
-import { initialVendors } from '../../data/mockData';
 import { useFleet } from '../../context/FleetContext';
 import { accountingApi } from '../../api/accountingApi';
 import { exportToCsv } from '../../utils/exportCsv';
@@ -139,7 +138,7 @@ export default function AccountingPage() {
       setPayables(Array.isArray(payablesData) ? payablesData : []);
       setExpenses(Array.isArray(payablesData) ? payablesData : []);
       setDbDriverBalances(Array.isArray(balancesData) ? balancesData : []);
-      setVendors(Array.isArray(vendorsData) && vendorsData.length > 0 ? vendorsData : initialVendors);
+      setVendors(Array.isArray(vendorsData) ? vendorsData : []);
       if (statsData) setBackendStats(statsData);
     } catch (err) {
       console.error('Accounting API Error:', err);

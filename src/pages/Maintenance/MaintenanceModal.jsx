@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import Modal from '../../components/common/Modal';
 import { useFleet } from '../../context/FleetContext';
-import { initialSettings } from '../../data/mockData';
 import { vendorsApi } from '../../api/vendorsApi';
 
 const DEFAULT_SERVICE_TYPES = [
@@ -53,9 +52,8 @@ export default function MaintenanceModal({
     }
   }, [isOpen, propVendors]);
 
-  // Requirement 5: Default oil change interval 5,000 miles (configurable value read from settings)
-  const defaultOilChangeInterval =
-    initialSettings?.maintenanceIntervals?.oilChangeMiles || 5000;
+  // Default oil change interval 5,000 miles
+  const defaultOilChangeInterval = 5000;
 
   const availableProviders = liveVendors.length > 0
     ? liveVendors.map((v) => v.name)
