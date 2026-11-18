@@ -41,6 +41,7 @@ export default function DashboardPage({ onNavigate, onViewVehicle }) {
   // Live Database State
   const [dbDashboardData, setDbDashboardData] = useState(null);
   const [isDbLoading, setIsDbLoading] = useState(false);
+  const [, setCurrencyKey] = useState(0);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (text, type = 'success') => {
@@ -68,6 +69,12 @@ export default function DashboardPage({ onNavigate, onViewVehicle }) {
       setIsDbLoading(false);
     }
   }, [dateRange, selectedVehicleFilter, selectedDriverFilter, selectedCategoryFilter]);
+
+  useEffect(() => {
+    const handleCurrencyChange = () => setCurrencyKey((k) => k + 1);
+    window.addEventListener('primeroute_currency_changed', handleCurrencyChange);
+    return () => window.removeEventListener('primeroute_currency_changed', handleCurrencyChange);
+  }, []);
 
   useEffect(() => {
     loadLiveDashboardFromDB();

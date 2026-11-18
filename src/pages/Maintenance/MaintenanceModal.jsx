@@ -14,6 +14,7 @@ import {
 import Modal from '../../components/common/Modal';
 import { useFleet } from '../../context/FleetContext';
 import { vendorsApi } from '../../api/vendorsApi';
+import { getCurrencySymbol } from '../../utils/formatters';
 
 const DEFAULT_SERVICE_TYPES = [
   'Oil Change - 5,000 miles',
@@ -327,10 +328,10 @@ export default function MaintenanceModal({
 
           <div>
             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Service Cost ($ USD) <span className="text-rose-500">*</span>
+              Service Cost ({getCurrencySymbol()}) <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-xs">$</span>
+              <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-xs">{getCurrencySymbol()}</span>
               <input
                 type="number"
                 step="0.01"

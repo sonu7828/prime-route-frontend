@@ -12,27 +12,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
-
-const FLEET_INSURANCE_POLICIES = [
-  {
-    id: 'POL-TRV-101',
-    insurer: 'Travelers Commercial Auto & Marine',
-    policyNumber: 'TRV-CA-9821034-25',
-    deductibleTerms: '$500 Collision Deductible'
-  },
-  {
-    id: 'POL-PRG-202',
-    insurer: 'Progressive Commercial Fleet',
-    policyNumber: 'PRG-FLT-8891204',
-    deductibleTerms: '$1,000 Comprehensive / Collision'
-  },
-  {
-    id: 'POL-FLT-303',
-    insurer: 'PrimeRoute Fleet Self-Insured Reserve',
-    policyNumber: 'FLT-INT-RES-01',
-    deductibleTerms: 'Direct Fleet Expense / Deductible Waived'
-  }
-];
+import { initialPolicies } from '../../data/mockData';
+import { getCurrencySymbol, formatCurrency } from '../../utils/formatters';
 
 export default function AccidentModal({
   isOpen,
@@ -59,7 +40,7 @@ export default function AccidentModal({
     insuranceCarrier: 'Travelers Commercial Auto & Marine',
     claimNumber: '',
     linkedPolicyId: 'POL-TRV-101',
-    deductibleTerms: '$500 Collision Deductible',
+    deductibleTerms: `${formatCurrency(500)} Collision Deductible`,
     deductibleAmount: 500,
     driverCharge: 500,
     insurancePaid: 1000,
@@ -81,7 +62,7 @@ export default function AccidentModal({
         repairInvoiceAmount: accident.repairInvoiceAmount || accident.repairEstimate || 1500,
         repairInvoiceFile: accident.repairInvoiceFile || 'shop_repair_invoice.pdf',
         linkedPolicyId: accident.linkedPolicyId || 'POL-TRV-101',
-        deductibleTerms: accident.deductibleTerms || '$500 Collision Deductible',
+        deductibleTerms: accident.deductibleTerms || `${formatCurrency(500)} Collision Deductible`,
         driverCharge: accident.driverCharge !== undefined ? accident.driverCharge : (accident.deductibleAmount || 500),
         amountRecovered: accident.amountRecovered !== undefined ? accident.amountRecovered : ((accident.insurancePaid || 0) + (accident.driverRecovered || 0)),
         resolutionStatus: accident.resolutionStatus || accident.status || 'Under Review',
@@ -110,7 +91,7 @@ export default function AccidentModal({
         insuranceCarrier: 'Travelers Commercial Auto & Marine',
         claimNumber: generatedClaimNum,
         linkedPolicyId: 'POL-TRV-101',
-        deductibleTerms: '$500 Collision Deductible',
+        deductibleTerms: `${formatCurrency(500)} Collision Deductible`,
         deductibleAmount: 500,
         driverCharge: 500,
         insurancePaid: 1000,
@@ -291,7 +272,7 @@ export default function AccidentModal({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Repair Invoice Amount ($)</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">{`Repair Invoice Amount (${getCurrencySymbol()})`}</label>
                 <input
                   type="number"
                   value={formData.repairInvoiceAmount}
@@ -373,7 +354,7 @@ export default function AccidentModal({
                   type="text"
                   value={formData.deductibleTerms}
                   onChange={(e) => setFormData((p) => ({ ...p, deductibleTerms: e.target.value }))}
-                  placeholder="$500 Collision Deductible"
+                  placeholder={`${formatCurrency(500)} Collision Deductible`}
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white"
                   required
                 />

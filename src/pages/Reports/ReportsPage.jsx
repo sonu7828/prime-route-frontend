@@ -43,7 +43,7 @@ import {
 import StatCard from '../../components/common/StatCard';
 import StatusBadge from '../../components/common/StatusBadge';
 import { exportToCsv } from '../../utils/exportCsv';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency, formatDate, getCurrencySymbol } from '../../utils/formatters';
 import {
   mockVehicles,
   mockDrivers,
@@ -304,7 +304,7 @@ export default function ReportsPage() {
         <StatCard
           icon={TrendingUp}
           label="Total Fleet Revenue (YTD)"
-          value="$482,500"
+          value={formatCurrency(482500)}
           change="+14.8% YoY Expansion"
           isPositive={true}
           color="blue"
@@ -312,7 +312,7 @@ export default function ReportsPage() {
         <StatCard
           icon={DollarSign}
           label="Operating Net Profit (EBITDA)"
-          value="$231,300"
+          value={formatCurrency(231300)}
           change="47.9% Operating Margin"
           isPositive={true}
           color="emerald"
@@ -328,8 +328,8 @@ export default function ReportsPage() {
         <StatCard
           icon={Clock}
           label="AR / AP Aging Balance"
-          value="$64,200 AR"
-          change="$32,100 Vendor AP"
+          value={`${formatCurrency(64200)} AR`}
+          change={`${formatCurrency(32100)} Vendor AP`}
           isPositive={false}
           color="amber"
         />
@@ -426,9 +426,9 @@ export default function ReportsPage() {
                   <BarChart data={monthlyReportData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 11 }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 11 }} tickFormatter={(v) => `$${v / 1000}k`} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 11 }} tickFormatter={(v) => `${getCurrencySymbol()}${v / 1000}k`} />
                     <Tooltip
-                      formatter={(val, name) => [`$${val.toLocaleString()}`, name.toUpperCase()]}
+                      formatter={(val, name) => [formatCurrency(val), name.toUpperCase()]}
                       contentStyle={{
                         backgroundColor: '#071D49',
                         borderRadius: '10px',
@@ -545,9 +545,9 @@ export default function ReportsPage() {
                 <BarChart data={profitabilityData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 11 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 11 }} tickFormatter={(v) => `$${v / 1000}k`} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 11 }} tickFormatter={(v) => `${getCurrencySymbol()}${v / 1000}k`} />
                   <Tooltip
-                    formatter={(val) => [`$${val.toLocaleString()}`, 'Net Profit']}
+                    formatter={(val) => [formatCurrency(val), 'Net Profit']}
                     contentStyle={{
                       backgroundColor: '#071D49',
                       borderRadius: '10px',
@@ -613,7 +613,7 @@ export default function ReportsPage() {
                       <td className="py-3 px-3 text-slate-600">
                         <span className="text-emerald-600 font-bold">{row.rentalDays}d</span> / <span className="text-rose-500 font-semibold">{row.downtimeDays}d</span>
                       </td>
-                      <td className="py-3 px-3 font-mono font-bold text-[#075EE8]">${row.revPac}</td>
+                      <td className="py-3 px-3 font-mono font-bold text-[#075EE8]">{formatCurrency(row.revPac)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -635,7 +635,7 @@ export default function ReportsPage() {
               <h3 className="text-base font-extrabold text-[#0A1E42]">
                 Operating Expenses Breakdown (Donut)
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">Cost allocations across fleet asset lifecycle ($251,200 Total)</p>
+              <p className="text-xs text-slate-500 mt-0.5">Cost allocations across fleet asset lifecycle ({formatCurrency(251200)} Total)</p>
 
               <div className="w-full h-[260px] flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
@@ -653,7 +653,7 @@ export default function ReportsPage() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                    <Tooltip formatter={(value) => formatCurrency(value)} />
                     <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
                   </PieChart>
                 </ResponsiveContainer>
@@ -668,19 +668,19 @@ export default function ReportsPage() {
               <div className="space-y-2 text-xs">
                 <div className="p-3 bg-slate-50 rounded-xl flex justify-between items-center">
                   <span className="text-slate-600">Gross Fleet Yield:</span>
-                  <span className="font-mono font-bold text-slate-900">$482,500</span>
+                  <span className="font-mono font-bold text-slate-900">{formatCurrency(482500)}</span>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl flex justify-between items-center">
                   <span className="text-slate-600">Fleet Opex Deductions:</span>
-                  <span className="font-mono font-bold text-rose-600">($251,200)</span>
+                  <span className="font-mono font-bold text-rose-600">({formatCurrency(251200)})</span>
                 </div>
                 <div className="p-3 bg-emerald-50 rounded-xl flex justify-between items-center">
                   <span className="font-bold text-emerald-900">EBITDA Net Profit:</span>
-                  <span className="font-mono font-black text-emerald-600 text-sm">+$231,300</span>
+                  <span className="font-mono font-black text-emerald-600 text-sm">+{formatCurrency(231300)}</span>
                 </div>
                 <div className="p-3 bg-blue-50 rounded-xl flex justify-between items-center">
                   <span className="font-bold text-blue-900">Total Owner Equity:</span>
-                  <span className="font-mono font-black text-blue-700 text-sm">$1,418,600</span>
+                  <span className="font-mono font-black text-blue-700 text-sm">{formatCurrency(1418600)}</span>
                 </div>
               </div>
             </div>
@@ -702,19 +702,19 @@ export default function ReportsPage() {
                 <div className="divide-y divide-slate-100 space-y-1.5">
                   <div className="flex justify-between py-1 pt-2">
                     <span className="text-slate-600">Commercial Vehicle Rental Contracts:</span>
-                    <span className="font-mono font-bold text-slate-800">$442,500</span>
+                    <span className="font-mono font-bold text-slate-800">{formatCurrency(442500)}</span>
                   </div>
                   <div className="flex justify-between py-1">
                     <span className="text-slate-600">Excess Mileage &amp; Refuel Surcharges:</span>
-                    <span className="font-mono font-bold text-slate-800">$24,800</span>
+                    <span className="font-mono font-bold text-slate-800">{formatCurrency(24800)}</span>
                   </div>
                   <div className="flex justify-between py-1">
                     <span className="text-slate-600">Tollway Administrative Recovery Surcharges:</span>
-                    <span className="font-mono font-bold text-slate-800">$15,200</span>
+                    <span className="font-mono font-bold text-slate-800">{formatCurrency(15200)}</span>
                   </div>
                   <div className="flex justify-between py-2 font-bold text-sm text-[#075EE8] bg-blue-50/50 px-2.5 rounded-xl">
                     <span>Gross Operating Income:</span>
-                    <span className="font-mono">$482,500</span>
+                    <span className="font-mono">{formatCurrency(482500)}</span>
                   </div>
                 </div>
               </div>
@@ -727,27 +727,27 @@ export default function ReportsPage() {
                 <div className="divide-y divide-slate-100 space-y-1.5">
                   <div className="flex justify-between py-1 pt-2">
                     <span className="text-slate-600">Routine Fleet Maintenance &amp; 5,000-mi Service:</span>
-                    <span className="font-mono font-bold text-slate-800">($46,200)</span>
+                    <span className="font-mono font-bold text-slate-800">({formatCurrency(46200)})</span>
                   </div>
                   <div className="flex justify-between py-1">
                     <span className="text-slate-600">Commercial Fleet Master Insurance Premiums:</span>
-                    <span className="font-mono font-bold text-slate-800">($58,000)</span>
+                    <span className="font-mono font-bold text-slate-800">({formatCurrency(58000)})</span>
                   </div>
                   <div className="flex justify-between py-1">
                     <span className="text-slate-600">Vehicle Acquisition Financing &amp; Interest:</span>
-                    <span className="font-mono font-bold text-slate-800">($52,400)</span>
+                    <span className="font-mono font-bold text-slate-800">({formatCurrency(52400)})</span>
                   </div>
                   <div className="flex justify-between py-1">
                     <span className="text-slate-600">Fleet Asset Amortization &amp; Depreciation:</span>
-                    <span className="font-mono font-bold text-slate-800">($72,600)</span>
+                    <span className="font-mono font-bold text-slate-800">({formatCurrency(72600)})</span>
                   </div>
                   <div className="flex justify-between py-1">
                     <span className="text-slate-600">General, Administrative &amp; Software (G&amp;A):</span>
-                    <span className="font-mono font-bold text-slate-800">($22,000)</span>
+                    <span className="font-mono font-bold text-slate-800">({formatCurrency(22000)})</span>
                   </div>
                   <div className="flex justify-between py-2 font-bold text-sm text-rose-600 bg-rose-50/50 px-2.5 rounded-xl">
                     <span>Total Operating Deductions:</span>
-                    <span className="font-mono">($251,200)</span>
+                    <span className="font-mono">({formatCurrency(251200)})</span>
                   </div>
                 </div>
               </div>
@@ -758,7 +758,7 @@ export default function ReportsPage() {
                 <p className="text-sm font-extrabold">Net Operating Profit (EBITDA)</p>
                 <p className="text-xs text-emerald-700">Healthy 47.9% operating margin across 65 active fleet assets</p>
               </div>
-              <span className="text-2xl font-black text-emerald-600 font-mono">+$231,300</span>
+              <span className="text-2xl font-black text-emerald-600 font-mono">+{formatCurrency(231300)}</span>
             </div>
           </div>
 
@@ -774,19 +774,19 @@ export default function ReportsPage() {
                 <h4 className="font-bold text-[#0A1E42] uppercase text-xs border-b pb-1">Assets</h4>
                 <div className="flex justify-between py-1 border-b border-slate-200">
                   <span>Fleet Vehicles Net Book Value (65 Units):</span>
-                  <span className="font-mono font-bold text-slate-800">$1,850,000</span>
+                  <span className="font-mono font-bold text-slate-800">{formatCurrency(1850000)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">
                   <span>Cash &amp; Bank Operating Accounts:</span>
-                  <span className="font-mono font-bold text-slate-800">$340,500</span>
+                  <span className="font-mono font-bold text-slate-800">{formatCurrency(340500)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">
                   <span>Accounts Receivable (Invoices &amp; Balances Due):</span>
-                  <span className="font-mono font-bold text-slate-800">$64,200</span>
+                  <span className="font-mono font-bold text-slate-800">{formatCurrency(64200)}</span>
                 </div>
                 <div className="flex justify-between py-2 font-bold text-sm text-[#075EE8]">
                   <span>Total Corporate Assets:</span>
-                  <span className="font-mono">$2,254,700</span>
+                  <span className="font-mono">{formatCurrency(2254700)}</span>
                 </div>
               </div>
 
@@ -794,23 +794,23 @@ export default function ReportsPage() {
                 <h4 className="font-bold text-[#0A1E42] uppercase text-xs border-b pb-1">Liabilities &amp; Equity</h4>
                 <div className="flex justify-between py-1 border-b border-slate-200">
                   <span>Outstanding Commercial Vehicle Loans:</span>
-                  <span className="font-mono font-bold text-slate-800">$780,000</span>
+                  <span className="font-mono font-bold text-slate-800">{formatCurrency(780000)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">
                   <span>Driver Refundable Security Deposit Escrow:</span>
-                  <span className="font-mono font-bold text-blue-600">$24,000</span>
+                  <span className="font-mono font-bold text-blue-600">{formatCurrency(24000)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-200">
                   <span>Accounts Payable (Mechanics / Parts / Insurance):</span>
-                  <span className="font-mono font-bold text-slate-800">$32,100</span>
+                  <span className="font-mono font-bold text-slate-800">{formatCurrency(32100)}</span>
                 </div>
                 <div className="flex justify-between py-2 font-bold text-sm text-slate-800">
                   <span>Total Liabilities:</span>
-                  <span className="font-mono">$836,100</span>
+                  <span className="font-mono">{formatCurrency(836100)}</span>
                 </div>
                 <div className="flex justify-between py-2 font-extrabold text-sm text-emerald-600 border-t border-slate-300">
                   <span>Total Owner Equity:</span>
-                  <span className="font-mono">$1,418,600</span>
+                  <span className="font-mono">{formatCurrency(1418600)}</span>
                 </div>
               </div>
             </div>
@@ -833,7 +833,7 @@ export default function ReportsPage() {
                 <p className="text-xs text-slate-500">Scheduled 5,000-mile services, brake overhauls, parts vs. labor costs, and turnaround times</p>
               </div>
               <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                YTD Maintenance: $46,200
+                YTD Maintenance: {formatCurrency(46200)}
               </span>
             </div>
 
@@ -862,9 +862,9 @@ export default function ReportsPage() {
                       <td className="py-3 px-4 font-bold text-[#0A1E42]">{m.vehicle}</td>
                       <td className="py-3 px-4 text-slate-700 font-medium">{m.type}</td>
                       <td className="py-3 px-4 text-slate-600">{m.shop}</td>
-                      <td className="py-3 px-4 font-mono">${m.partsCost}</td>
-                      <td className="py-3 px-4 font-mono">${m.laborCost}</td>
-                      <td className="py-3 px-4 font-mono font-extrabold text-[#0A1E42]">${m.total}</td>
+                      <td className="py-3 px-4 font-mono">{formatCurrency(m.partsCost)}</td>
+                      <td className="py-3 px-4 font-mono">{formatCurrency(m.laborCost)}</td>
+                      <td className="py-3 px-4 font-mono font-extrabold text-[#0A1E42]">{formatCurrency(m.total)}</td>
                       <td className="py-3 px-4 font-mono text-slate-600">{m.turnaroundHours} hrs</td>
                       <td className="py-3 px-4">
                         <StatusBadge status={m.status} />
@@ -1031,10 +1031,10 @@ export default function ReportsPage() {
                       <tr key={t.authority} className="hover:bg-blue-50/20">
                         <td className="py-3 px-4 font-bold text-[#0A1E42]">{t.authority}</td>
                         <td className="py-3 px-4 font-mono">{t.citations} Tickets</td>
-                        <td className="py-3 px-4 font-mono font-bold text-slate-800">${t.incurredAmount.toFixed(2)}</td>
-                        <td className="py-3 px-4 font-mono font-bold text-emerald-600">${t.recoveredFromDrivers.toFixed(2)}</td>
-                        <td className="py-3 px-4 font-mono font-bold text-blue-700">+${t.adminFeesCollected.toFixed(2)}</td>
-                        <td className="py-3 px-4 font-mono text-rose-600">${t.outstandingBalance.toFixed(2)}</td>
+                        <td className="py-3 px-4 font-mono font-bold text-slate-800">{formatCurrency(t.incurredAmount)}</td>
+                        <td className="py-3 px-4 font-mono font-bold text-emerald-600">{formatCurrency(t.recoveredFromDrivers)}</td>
+                        <td className="py-3 px-4 font-mono font-bold text-blue-700">+{formatCurrency(t.adminFeesCollected)}</td>
+                        <td className="py-3 px-4 font-mono text-rose-600">{formatCurrency(t.outstandingBalance)}</td>
                         <td className="py-3 px-4">
                           <StatusBadge status={t.status === 'Reconciled' ? 'Paid' : 'Under Review'} />
                         </td>
@@ -1136,7 +1136,7 @@ export default function ReportsPage() {
                         <td className="py-3 px-4 font-mono font-bold text-blue-700">{c.contractId}</td>
                         <td className="py-3 px-4 font-bold text-[#0A1E42]">{c.customer}</td>
                         <td className="py-3 px-4 text-slate-700">{c.vehicle}</td>
-                        <td className="py-3 px-4 font-mono font-bold text-slate-800">${c.weeklyRate}/wk</td>
+                        <td className="py-3 px-4 font-mono font-bold text-slate-800">{formatCurrency(c.weeklyRate)}/wk</td>
                         <td className="py-3 px-4 font-mono text-slate-800">{formatDate(c.expiryDate)}</td>
                         <td className="py-3 px-4">
                           <span
@@ -1151,7 +1151,7 @@ export default function ReportsPage() {
                             {c.daysRemaining} days
                           </span>
                         </td>
-                        <td className="py-3 px-4 font-mono text-slate-700">${c.depositHeld}</td>
+                        <td className="py-3 px-4 font-mono text-slate-700">{formatCurrency(c.depositHeld)}</td>
                         <td className="py-3 px-4 font-semibold text-slate-700">{c.renewalStatus}</td>
                       </tr>
                     ))}
@@ -1170,7 +1170,7 @@ export default function ReportsPage() {
                   <p className="text-xs text-slate-500">Annual cumulative spending across body shops, parts suppliers, insurance, and fuel</p>
                 </div>
                 <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
-                  Total Vendor YTD: $80,850
+                  Total Vendor YTD: {formatCurrency(80850)}
                 </span>
               </div>
               <div className="overflow-x-auto">

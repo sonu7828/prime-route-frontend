@@ -21,7 +21,28 @@ const SETTINGS_SUBTABS = [
 
 export default function SettingsPage({ activeSubTab, onSubTabChange }) {
   const [activeTab, setActiveTab] = useState(activeSubTab || 'general');
-  const [settings, setSettings] = useState(initialSettings);
+  const [settings, setSettings] = useState(() => {
+    try {
+      const stored = localStorage.getItem('primeroute_general_settings');
+      const activeCur = localStorage.getItem('primeroute_currency');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (activeCur && parsed?.company) {
+          parsed.company.currency = activeCur;
+        }
+        return parsed;
+      }
+      if (activeCur) {
+        return {
+          ...initialSettings,
+          company: { ...initialSettings.company, currency: activeCur },
+        };
+      }
+    } catch {
+      // fallback
+    }
+    return initialSettings;
+  });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
@@ -39,14 +60,35 @@ export default function SettingsPage({ activeSubTab, onSubTabChange }) {
 
   const handleCompanyChange = (e) => {
     const { name, value } = e.target;
-    setSettings((prev) => ({
-      ...prev,
-      company: { ...prev.company, [name]: value },
-    }));
+    setSettings((prev) => {
+      const updated = {
+        ...prev,
+        company: { ...prev.company, [name]: value },
+      };
+      if (name === 'currency') {
+        try {
+          localStorage.setItem('primeroute_currency', value);
+          localStorage.setItem('primeroute_general_settings', JSON.stringify(updated));
+          window.dispatchEvent(new Event('primeroute_currency_changed'));
+        } catch {
+          // ignore
+        }
+      }
+      return updated;
+    });
   };
 
   const handleSave = (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    try {
+      localStorage.setItem('primeroute_general_settings', JSON.stringify(settings));
+      if (settings?.company?.currency) {
+        localStorage.setItem('primeroute_currency', settings.company.currency);
+      }
+      window.dispatchEvent(new Event('primeroute_currency_changed'));
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+    }
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };

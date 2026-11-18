@@ -18,7 +18,7 @@ export default function EscrowLedgerTable({
           </p>
         </div>
         <div className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-blue-700 shrink-0">
-          Total Held in Escrow: $1,510
+          Total Held in Escrow: {formatCurrency(1510)}
         </div>
       </div>
 
@@ -46,7 +46,7 @@ export default function EscrowLedgerTable({
                 <td className="py-3 px-3 font-mono text-slate-500">{esc.contractId}</td>
                 <td className="py-3 px-3 font-mono font-bold text-slate-700">{formatCurrency(esc.depositAmount)}</td>
                 <td className="py-3 px-3 font-mono font-bold text-rose-600">
-                  {esc.deductions > 0 ? `-${formatCurrency(esc.deductions)}` : '$0'}
+                  {esc.deductions > 0 ? `-${formatCurrency(esc.deductions)}` : formatCurrency(0)}
                 </td>
                 <td className="py-3 px-3 font-mono font-extrabold text-emerald-600 text-sm">
                   {formatCurrency(esc.balance)}

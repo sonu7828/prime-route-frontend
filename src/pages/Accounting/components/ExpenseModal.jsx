@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Modal from '../../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../../components/forms/FormInputs';
+import { formatCurrency, getCurrencySymbol } from '../../../utils/formatters';
 
 // The 16 Controlled Categories (Admin-managed controlled list)
 export const EXPENSE_CATEGORIES = [
@@ -130,7 +131,7 @@ export default function ExpenseModal({
           description: exp.description || exp.category,
           amount: exp.amount,
           date: exp.date,
-          matchReason: `matching invoice number "${formData.invoiceNumber}" ($${Number(exp.amount).toLocaleString()})`,
+          matchReason: `matching invoice number "${formData.invoiceNumber}" (${formatCurrency(exp.amount)})`,
         };
       }
 
@@ -142,7 +143,7 @@ export default function ExpenseModal({
           description: exp.description || exp.category,
           amount: exp.amount,
           date: exp.date,
-          matchReason: `identical amount ($${numAmount.toLocaleString()}) on ${formData.date}`,
+          matchReason: `identical amount (${formatCurrency(numAmount)}) on ${formData.date}`,
         };
       }
     }
@@ -364,10 +365,10 @@ export default function ExpenseModal({
 
           <div>
             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Amount ($ USD) <span className="text-rose-500">*</span>
+              Amount ({getCurrencySymbol()}) <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-xs">$</span>
+              <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-xs">{getCurrencySymbol()}</span>
               <input
                 type="number"
                 step="0.01"

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Save, UploadCloud, RefreshCw, Building, DollarSign, Gauge, CheckCircle2 } from 'lucide-react';
 import { FormInput, FormSelect } from '../../../components/forms/FormInputs';
 
@@ -17,6 +17,18 @@ export default function GeneralSettingsTab({
 }) {
   const [logoPreview, setLogoPreview] = useState(settings?.company?.logo || '/primeroute-logo.png');
   const [saveToast, setSaveToast] = useState(false);
+
+  const selectedCurrencyValue = useMemo(() => {
+    const raw = settings?.company?.currency;
+    if (!raw) return 'USD ($)';
+    if (CURRENCY_OPTIONS.some((o) => o.value === raw)) return raw;
+    const upper = String(raw).toUpperCase();
+    if (upper.includes('GBP') || upper.includes('POUND')) return 'GBP (£)';
+    if (upper.includes('EUR')) return 'EUR (€)';
+    if (upper.includes('CAD')) return 'CAD ($)';
+    if (upper.includes('AUD')) return 'AUD ($)';
+    return 'USD ($)';
+  }, [settings?.company?.currency]);
 
   const handleLogoUpload = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -210,7 +222,7 @@ export default function GeneralSettingsTab({
               </label>
               <select
                 name="currency"
-                value={settings?.company?.currency || 'USD ($)'}
+                value={selectedCurrencyValue}
                 onChange={onCompanyChange}
                 className="w-full px-3.5 py-2.5 text-xs font-bold border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#075EE8]"
               >

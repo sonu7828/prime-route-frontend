@@ -132,7 +132,7 @@ export default function BalancesTable({
                   {formatCurrency(b.payments)}
                 </td>
                 <td className="py-3.5 px-4 text-right font-medium text-purple-600">
-                  {b.credits > 0 ? `-${formatCurrency(b.credits)}` : '$0.00'}
+                  {b.credits > 0 ? `-${formatCurrency(b.credits)}` : formatCurrency(0)}
                 </td>
                 <td className="py-3.5 px-4 text-right text-slate-500 font-mono">
                   {formatCurrency(b.deposit)}

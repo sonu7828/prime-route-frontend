@@ -7,8 +7,9 @@ import {
   YAxis,
   Tooltip,
 } from 'recharts';
-import { DollarSign, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, ArrowUpRight } from 'lucide-react';
 import { financialSummaryData } from '../../data/mockData';
+import { formatCurrency } from '../../utils/formatters';
 
 export default function FinancialBarChart({ data: propData }) {
   const summary = propData || financialSummaryData;
@@ -20,7 +21,7 @@ export default function FinancialBarChart({ data: propData }) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-blue-50 text-[#075EE8]">
-            <DollarSign className="w-4 h-4" />
+            <TrendingUp className="w-4 h-4" />
           </div>
           <h3 className="font-bold text-[#0A1E42] text-base">Financial Summary</h3>
         </div>
@@ -40,7 +41,7 @@ export default function FinancialBarChart({ data: propData }) {
               <YAxis hide />
               <Tooltip
                 cursor={{ fill: '#F1F5F9', radius: 4 }}
-                formatter={(val) => [`$${val.toLocaleString()}`, 'Revenue']}
+                formatter={(val) => [formatCurrency(val), 'Revenue']}
                 contentStyle={{
                   backgroundColor: '#071D49',
                   borderRadius: '10px',
@@ -67,7 +68,7 @@ export default function FinancialBarChart({ data: propData }) {
               Total Revenue
             </div>
             <div className="text-base font-extrabold text-[#0A1E42] mt-0.5">
-              ${(summary.totalRevenue || 0).toLocaleString()}
+              {formatCurrency(summary.totalRevenue || 0)}
             </div>
           </div>
 
@@ -77,7 +78,7 @@ export default function FinancialBarChart({ data: propData }) {
               Total Expenses
             </div>
             <div className="text-base font-extrabold text-[#0A1E42] mt-0.5">
-              ${(summary.totalExpenses || 0).toLocaleString()}
+              {formatCurrency(summary.totalExpenses || 0)}
             </div>
           </div>
 
@@ -85,7 +86,7 @@ export default function FinancialBarChart({ data: propData }) {
             <div className="text-xs text-slate-500 font-medium">Net Profit</div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-base font-extrabold text-[#0A1E42]">
-                ${(summary.netProfit || 0).toLocaleString()}
+                {formatCurrency(summary.netProfit || 0)}
               </span>
               <span className="inline-flex items-center text-[11px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
                 <ArrowUpRight className="w-3 h-3 mr-0.5" />

@@ -15,7 +15,7 @@ import {
 import Modal from '../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../components/forms/FormInputs';
 import { isEndDateAfterStartDate } from '../../utils/validators';
-import { formatDate, formatCurrency } from '../../utils/formatters';
+import { formatDate, formatCurrency, getCurrencySymbol } from '../../utils/formatters';
 import { useFleet } from '../../context/FleetContext';
 
 const STANDARD_TERMS = [
@@ -402,7 +402,7 @@ export default function RentalModal({
             {/* Rates, Deposit & Mileage */}
             <div className="grid grid-cols-3 gap-3">
               <FormInput
-                label="Weekly Rate ($)"
+                label={`Weekly Rate (${getCurrencySymbol()})`}
                 name="weeklyRent"
                 type="number"
                 value={formData.weeklyRent}
@@ -411,7 +411,7 @@ export default function RentalModal({
                 required
               />
               <FormInput
-                label="Security Deposit ($)"
+                label={`Security Deposit (${getCurrencySymbol()})`}
                 name="deposit"
                 type="number"
                 value={formData.deposit}
@@ -601,16 +601,16 @@ export default function RentalModal({
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">Weekly Rate:</span>
-                      <span className="font-bold text-[#075EE8]">{formData.weeklyRent ? `$${formData.weeklyRent}` : '—'}</span>
+                      <span className="font-bold text-[#075EE8]">{formData.weeklyRent ? formatCurrency(formData.weeklyRent) : '—'}</span>
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">Security Deposit:</span>
-                      <span className="font-bold text-slate-800">{formData.deposit ? `$${formData.deposit}` : '—'}</span>
+                      <span className="font-bold text-slate-800">{formData.deposit ? formatCurrency(formData.deposit) : '—'}</span>
                     </div>
                   </div>
                   <div className="pt-1 flex items-center justify-between text-[10px] text-slate-500 border-t border-slate-200/60">
                     <span>Payment Due: <strong>{formData.paymentSchedule || '—'}</strong></span>
-                    <span>Mileage Allowance: <strong>{formData.mileageAllowance ? `${formData.mileageAllowance} mi/wk` : '—'}</strong> {formData.excessMileageRate ? `($${formData.excessMileageRate}/mi excess)` : ''}</span>
+                    <span>Mileage Allowance: <strong>{formData.mileageAllowance ? `${formData.mileageAllowance} mi/wk` : '—'}</strong> {formData.excessMileageRate ? `(${formatCurrency(formData.excessMileageRate)}/mi excess)` : ''}</span>
                   </div>
                 </div>
 

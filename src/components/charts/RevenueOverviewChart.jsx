@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { revenueOverviewData } from '../../data/mockData';
+import { formatCurrency } from '../../utils/formatters';
 
 export default function RevenueOverviewChart({ data: propData }) {
   const [timeframe, setTimeframe] = useState('This Month');
@@ -23,15 +24,15 @@ export default function RevenueOverviewChart({ data: propData }) {
           <p className="font-semibold text-slate-300">{label}</p>
           <p className="text-[#38BDF8] flex items-center justify-between gap-4">
             <span>Revenue:</span>
-            <span className="font-bold">${payload[0]?.value?.toLocaleString()}</span>
+            <span className="font-bold">{formatCurrency(payload[0]?.value)}</span>
           </p>
           <p className="text-slate-300 flex items-center justify-between gap-4">
             <span>Expenses:</span>
-            <span className="font-bold">${payload[1]?.value?.toLocaleString()}</span>
+            <span className="font-bold">{formatCurrency(payload[1]?.value)}</span>
           </p>
           <p className="text-emerald-400 font-bold pt-1 border-t border-slate-700 flex items-center justify-between gap-4">
             <span>Net:</span>
-            <span>${((payload[0]?.value || 0) - (payload[1]?.value || 0)).toLocaleString()}</span>
+            <span>{formatCurrency((payload[0]?.value || 0) - (payload[1]?.value || 0))}</span>
           </p>
         </div>
       );

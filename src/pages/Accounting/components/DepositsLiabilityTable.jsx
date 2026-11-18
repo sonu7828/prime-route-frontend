@@ -12,7 +12,7 @@ import {
   Plus
 } from 'lucide-react';
 import StatusBadge from '../../../components/common/StatusBadge';
-import { formatCurrency, formatDate } from '../../../utils/formatters';
+import { formatCurrency, formatDate, getCurrencySymbol } from '../../../utils/formatters';
 import { exportToCsv } from '../../../utils/exportCsv';
 import Modal from '../../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../../components/forms/FormInputs';
@@ -220,7 +220,7 @@ export default function DepositsLiabilityTable({
                     {formatCurrency(d.depositAmount || d.amount)}
                   </td>
                   <td className="py-3.5 px-4 text-right font-medium text-rose-600">
-                    {d.deductions > 0 ? `-${formatCurrency(d.deductions)}` : '$0.00'}
+                    {d.deductions > 0 ? `-${formatCurrency(d.deductions)}` : formatCurrency(0)}
                   </td>
                   <td className="py-3.5 px-4 text-right font-extrabold text-amber-900 font-mono">
                     {formatCurrency(d.balance)}
@@ -343,7 +343,7 @@ export default function DepositsLiabilityTable({
             />
 
             <FormInput
-              label="Deposit Amount ($) *"
+              label={`Deposit Amount (${getCurrencySymbol()}) *`}
               type="number"
               step="0.01"
               value={newDeposit.depositAmount}

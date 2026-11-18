@@ -1,6 +1,7 @@
 import React from 'react';
 import Modal from '../../../components/common/Modal';
 import { FormInput, FormSelect } from '../../../components/forms/FormInputs';
+import { getCurrencySymbol } from '../../../utils/formatters';
 
 export default function ExpenseIncomeModals({
   isExpenseModalOpen,
@@ -55,7 +56,7 @@ export default function ExpenseIncomeModals({
             required
           />
           <FormInput
-            label="Amount ($)"
+            label={`Amount (${getCurrencySymbol()})`}
             name="amount"
             type="number"
             value={newExpense.amount}
@@ -106,7 +107,7 @@ export default function ExpenseIncomeModals({
             required
           />
           <FormInput
-            label="Amount ($)"
+            label={`Amount (${getCurrencySymbol()})`}
             name="amount"
             type="number"
             value={newIncome.amount}

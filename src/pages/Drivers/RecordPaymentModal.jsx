@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, CreditCard, CheckCircle2, ShieldCheck } from 'lucide-react';
 import Modal from '../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../components/forms/FormInputs';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, getCurrencySymbol } from '../../utils/formatters';
 
 const PAYMENT_METHODS = [
   'Corporate ACH Direct Debit',
@@ -78,7 +78,7 @@ export default function RecordPaymentModal({
         </div>
 
         <FormInput
-          label="Payment Amount ($)"
+          label={`Payment Amount (${getCurrencySymbol()})`}
           type="number"
           name="amount"
           value={amount}

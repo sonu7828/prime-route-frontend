@@ -11,6 +11,7 @@ import {
   Car
 } from 'lucide-react';
 import { FormInput, FormSelect, FormTextarea } from '../../../components/forms/FormInputs';
+import { getCurrencySymbol } from '../../../utils/formatters';
 
 export default function PickupTermsSection({
   formData,
@@ -79,7 +80,7 @@ export default function PickupTermsSection({
           />
 
           <FormInput
-            label="Weekly Lease Rate ($)"
+            label={`Weekly Lease Rate (${getCurrencySymbol()})`}
             name="weeklyRent"
             type="number"
             value={formData.weeklyRent}

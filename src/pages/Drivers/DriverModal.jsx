@@ -3,6 +3,7 @@ import { AlertCircle, User, Shield, Phone, Mail, MapPin, Calendar, Clock, AlertT
 import Modal from '../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../components/forms/FormInputs';
 import { useFleet } from '../../context/FleetContext';
+import { formatCurrency } from '../../utils/formatters';
 
 const US_STATES = [
   'NY', 'NJ', 'CA', 'IL', 'TX', 'FL', 'PA', 'CT', 'MA', 'GA',
@@ -92,7 +93,7 @@ export default function DriverModal({
       joiningDate: new Date().toISOString().split('T')[0],
       emergencyContact: 'Rachel Vance (+1 555-901-2244)',
       vehicle: 'Unassigned',
-      salaryRate: '$2,400/mo',
+      salaryRate: `${formatCurrency(2400)}/mo`,
       balance: 0,
     });
     setErrors({});

@@ -31,7 +31,7 @@ import { useFleet } from '../../context/FleetContext';
 import Can from '../../auth/Can';
 import { vehiclesApi, auditApi } from '../../api';
 import { exportToCsv } from '../../utils/exportCsv';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, getCurrencySymbol } from '../../utils/formatters';
 
 const CONTROLLED_STATUSES = [
   'All',
@@ -301,11 +301,11 @@ export default function VehiclesPage() {
         'License Plate': v.plate || '',
         Status: v.status || 'Available',
         'Assigned Driver': v.driver || 'Unassigned',
-        'Daily Rate ($/day)': v.dailyRate || 65,
-        'Revenue MTD ($)': getRevenueMtd(v),
+        [`Daily Rate (${getCurrencySymbol()}/day)`]: v.dailyRate || 65,
+        [`Revenue MTD (${getCurrencySymbol()})`]: getRevenueMtd(v),
         Mileage: v.mileage || '',
         Location: v.location || v.depotLocation || 'JFK Airport Fleet Hub',
-        'Purchase Price ($)': v.purchasePrice || 28500,
+        [`Purchase Price (${getCurrencySymbol()})`]: v.purchasePrice || 28500,
         'Financing Lender': v.lenderName || '',
       }))
     );

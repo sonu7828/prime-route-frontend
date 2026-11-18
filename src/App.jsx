@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from './components/layout/MainLayout';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import VehiclesPage from './pages/Vehicles/VehiclesPage';
@@ -45,6 +45,17 @@ function AppContent({ onLogoutConfirm }) {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [settingsSubTab, setSettingsSubTab] = useState('general');
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [currencyTick, setCurrencyTick] = useState(0);
+
+  useEffect(() => {
+    const handleCurrencyChange = () => setCurrencyTick((prev) => prev + 1);
+    window.addEventListener('primeroute_currency_changed', handleCurrencyChange);
+    window.addEventListener('storage', handleCurrencyChange);
+    return () => {
+      window.removeEventListener('primeroute_currency_changed', handleCurrencyChange);
+      window.removeEventListener('storage', handleCurrencyChange);
+    };
+  }, []);
 
   const handleNavigate = (menuId, subTab = null) => {
     setActiveMenu(menuId);
@@ -129,7 +140,9 @@ function AppContent({ onLogoutConfirm }) {
       onNavigate={handleNavigate}
       onLogout={() => setIsLogoutDialogOpen(true)}
     >
-      {renderActiveModule()}
+      <React.Fragment key={activeMenu === 'settings' ? 'settings' : `${activeMenu}-${currencyTick}`}>
+        {renderActiveModule()}
+      </React.Fragment>
 
       {/* Global Logout Confirmation */}
       <ConfirmationModal
