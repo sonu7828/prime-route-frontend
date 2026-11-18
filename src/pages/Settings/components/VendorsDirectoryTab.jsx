@@ -1,5 +1,6 @@
 import React from 'react';
 import { Briefcase } from 'lucide-react';
+import { formatCurrency } from '../../../utils/formatters';
 
 export default function VendorsDirectoryTab({ vendors }) {
   return (
@@ -45,7 +46,7 @@ export default function VendorsDirectoryTab({ vendors }) {
                   <p className="text-[10px] text-slate-400">{v.email}</p>
                 </td>
                 <td className="py-3 px-3 font-medium text-slate-700">{v.terms}</td>
-                <td className="py-3 px-3 font-mono font-bold text-slate-800">${v.spendYTD.toLocaleString()}</td>
+                <td className="py-3 px-3 font-mono font-bold text-slate-800">{formatCurrency(v.spendYTD)}</td>
                 <td className="py-3 px-3">
                   <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     {v.status}

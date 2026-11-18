@@ -11,7 +11,9 @@ import {
   CheckCircle2,
   AlertTriangle
 } from 'lucide-react';
-import { mockVehicles, mockDrivers, initialPolicies } from '../../data/mockData';
+import { useFleet } from '../../context/FleetContext';
+import { initialPolicies } from '../../data/mockData';
+import { getCurrencySymbol, formatCurrency } from '../../utils/formatters';
 
 export default function AccidentModal({
   isOpen,
@@ -19,6 +21,8 @@ export default function AccidentModal({
   onSave,
   accident = null,
 }) {
+  const { vehicles, drivers } = useFleet();
+
   const [formData, setFormData] = useState({
     incidentDate: new Date().toISOString().split('T')[0],
     vehicle: '',
@@ -36,7 +40,7 @@ export default function AccidentModal({
     insuranceCarrier: 'Travelers Commercial Auto & Marine',
     claimNumber: '',
     linkedPolicyId: 'POL-TRV-101',
-    deductibleTerms: '$500 Collision Deductible',
+    deductibleTerms: `${formatCurrency(500)} Collision Deductible`,
     deductibleAmount: 500,
     driverCharge: 500,
     insurancePaid: 1000,
@@ -58,55 +62,56 @@ export default function AccidentModal({
         repairInvoiceAmount: accident.repairInvoiceAmount || accident.repairEstimate || 1500,
         repairInvoiceFile: accident.repairInvoiceFile || 'shop_repair_invoice.pdf',
         linkedPolicyId: accident.linkedPolicyId || 'POL-TRV-101',
-        deductibleTerms: accident.deductibleTerms || '$500 Collision Deductible',
+        deductibleTerms: accident.deductibleTerms || `${formatCurrency(500)} Collision Deductible`,
         driverCharge: accident.driverCharge !== undefined ? accident.driverCharge : (accident.deductibleAmount || 500),
         amountRecovered: accident.amountRecovered !== undefined ? accident.amountRecovered : ((accident.insurancePaid || 0) + (accident.driverRecovered || 0)),
         resolutionStatus: accident.resolutionStatus || accident.status || 'Under Review',
         status: accident.status || accident.resolutionStatus || 'Under Review'
       });
     } else {
-      const defaultVehicle = mockVehicles[0] || { name: 'Toyota Camry SE', plate: 'PR-2024-TC' };
-      const defaultDriver = mockDrivers[0] || { name: 'Sarah Jenkins' };
+      const defaultVehicle = (vehicles && vehicles[0]) || { name: 'Toyota Camry SE', plate: 'PR-2024-TC' };
+      const defaultDriver = (drivers && drivers[0]) || { name: 'Unassigned' };
       const generatedClaimNum = `CLM-TRV-${Math.floor(100000 + Math.random() * 900000)}`;
 
       setFormData({
         id: `ACC-${Date.now()}`,
         incidentDate: new Date().toISOString().split('T')[0],
-        vehicle: defaultVehicle.name,
-        plate: defaultVehicle.plate,
-        driver: defaultDriver.name,
-        location: 'Route 4 & Grand Ave, Paramus NJ',
-        policeReportNumber: `NJPD-2025-${Math.floor(10000 + Math.random() * 90000)}`,
-        thirdPartyInfo: 'Third Party Commercial Vehicle (Plate: NY-COMM-8891)',
-        damage: 'Front bumper cover cracked and passenger side headlight assembly damaged.',
-        damageDescription: 'Front bumper cover cracked and passenger side headlight assembly damaged.',
-        repairEstimate: 1650,
+        vehicle: defaultVehicle.name || `${defaultVehicle.make} ${defaultVehicle.model}`,
+        plate: defaultVehicle.plate || 'PR-FLEET',
+        driver: defaultVehicle.driver && defaultVehicle.driver !== 'Unassigned' ? defaultVehicle.driver : defaultDriver.name,
+        location: 'Fleet Depot / Service Area',
+        policeReportNumber: '',
+        thirdPartyInfo: 'None reported',
+        damage: '',
+        damageDescription: '',
+        repairEstimate: 1500,
         repairInvoiceNumber: `INV-SHOP-${Math.floor(8000 + Math.random() * 1000)}`,
-        repairInvoiceAmount: 1650,
-        repairInvoiceFile: 'speedy_pro_invoice_prelim.pdf',
+        repairInvoiceAmount: 1500,
+        repairInvoiceFile: '',
         insuranceCarrier: 'Travelers Commercial Auto & Marine',
         claimNumber: generatedClaimNum,
         linkedPolicyId: 'POL-TRV-101',
-        deductibleTerms: '$500 Collision Deductible',
+        deductibleTerms: `${formatCurrency(500)} Collision Deductible`,
         deductibleAmount: 500,
         driverCharge: 500,
-        insurancePaid: 1150,
+        insurancePaid: 1000,
         driverRecovered: 500,
-        amountRecovered: 1650,
+        amountRecovered: 1500,
         assignedShop: 'Speedy Pro Auto Clinic',
         status: 'Under Review',
         resolutionStatus: 'Under Review',
-        notes: 'Claim initiated with carrier. Repair estimate verified by fleet mechanic.'
+        notes: ''
       });
     }
-  }, [accident, isOpen]);
+  }, [accident, isOpen, vehicles, drivers]);
 
   const handleVehicleChange = (vehicleName) => {
-    const selected = mockVehicles.find((v) => v.name === vehicleName);
+    const selected = (vehicles || []).find((v) => (v.name === vehicleName || `${v.make} ${v.model}` === vehicleName));
     setFormData((prev) => ({
       ...prev,
       vehicle: vehicleName,
-      plate: selected?.plate || prev.plate
+      plate: selected?.plate || prev.plate,
+      driver: selected?.driver && selected.driver !== 'Unassigned' ? selected.driver : prev.driver
     }));
   };
 
@@ -167,11 +172,14 @@ export default function AccidentModal({
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
                 required
               >
-                {mockVehicles.map((v) => (
-                  <option key={v.id} value={v.name}>
-                    {v.name} ({v.plate})
-                  </option>
-                ))}
+                {(vehicles || []).map((v) => {
+                  const label = v.name || `${v.make} ${v.model}`;
+                  return (
+                    <option key={v.id} value={label}>
+                      {label} ({v.plate})
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -183,7 +191,8 @@ export default function AccidentModal({
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
                 required
               >
-                {mockDrivers.map((d) => (
+                <option value="Unassigned">Unassigned</option>
+                {(drivers || []).map((d) => (
                   <option key={d.id} value={d.name}>
                     {d.name}
                   </option>
@@ -263,7 +272,7 @@ export default function AccidentModal({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">Repair Invoice Amount ($)</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">{`Repair Invoice Amount (${getCurrencySymbol()})`}</label>
                 <input
                   type="number"
                   value={formData.repairInvoiceAmount}
@@ -345,7 +354,7 @@ export default function AccidentModal({
                   type="text"
                   value={formData.deductibleTerms}
                   onChange={(e) => setFormData((p) => ({ ...p, deductibleTerms: e.target.value }))}
-                  placeholder="$500 Collision Deductible"
+                  placeholder={`${formatCurrency(500)} Collision Deductible`}
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white"
                   required
                 />

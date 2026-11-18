@@ -17,9 +17,9 @@ export default function InspectionKpis({ stats }) {
       <StatCard
         icon={Clock}
         label="Awaiting Inspection"
-        value={stats.awaitingCount || 2}
-        change="Pending Sign-off"
-        isPositive={false}
+        value={stats.awaitingCount ?? 0}
+        change={stats.awaitingCount > 0 ? "Pending Sign-off" : "All Clear"}
+        isPositive={stats.awaitingCount === 0}
         color="amber"
       />
       <StatCard

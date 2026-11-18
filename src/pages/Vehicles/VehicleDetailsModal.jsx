@@ -352,7 +352,7 @@ export default function VehicleDetailsModal({
                         {rental.startDate} – {rental.endDate}
                       </td>
                       <td className="py-2.5 px-3 font-medium text-slate-600">{rental.rentalType}</td>
-                      <td className="py-2.5 px-3 text-right font-semibold">${rental.dailyRate}/d</td>
+                      <td className="py-2.5 px-3 text-right font-semibold">{formatCurrency(rental.dailyRate)}/d</td>
                       <td className="py-2.5 px-3 text-right font-bold text-[#0A1E42]">
                         {formatCurrency(rental.totalAmount)}
                       </td>

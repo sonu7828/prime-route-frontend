@@ -160,7 +160,7 @@ export default function DriverStatementModal({
           <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
             <span className="text-slate-400 font-bold text-[10px] uppercase">4. Refunds / Credits</span>
             <p className="text-sm sm:text-base font-extrabold text-cyan-600 mt-0.5">
-              {totalRefunds > 0 ? `-${formatCurrency(totalRefunds)}` : '$0.00'}
+              {totalRefunds > 0 ? `-${formatCurrency(totalRefunds)}` : formatCurrency(0)}
             </p>
           </div>
 

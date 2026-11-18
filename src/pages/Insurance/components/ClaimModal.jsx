@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../../../components/common/Modal';
 import { ShieldAlert, DollarSign, FileText, Wrench, Building } from 'lucide-react';
+import { getCurrencySymbol, formatCurrency } from '../../../utils/formatters';
 
 export default function ClaimModal({
   isOpen,
@@ -33,7 +34,7 @@ export default function ClaimModal({
       repairInvoice: '',
       repairInvoiceFile: '',
       deductibleAmount: firstPol.deductible ? parseFloat(String(firstPol.deductible).replace(/[^0-9.-]+/g, '')) || 0 : '',
-      deductibleTerms: firstPol.deductibleTerms || '$1,000 Deductible',
+      deductibleTerms: firstPol.deductibleTerms || `${formatCurrency(1000)} Deductible`,
       insurancePaid: '',
       driverCharge: '',
       amountRecovered: 0,
@@ -281,7 +282,7 @@ export default function ClaimModal({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Claimed Amount ($)
+                Claimed Amount ({getCurrencySymbol()})
               </label>
               <input
                 type="number"
@@ -294,7 +295,7 @@ export default function ClaimModal({
 
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Deductible Amount ($)
+                Deductible Amount ({getCurrencySymbol()})
               </label>
               <input
                 type="number"

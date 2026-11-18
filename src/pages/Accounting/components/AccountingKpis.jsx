@@ -32,8 +32,8 @@ export default function AccountingKpis({
         >
           <StatCard
             title="Operating Revenue"
-            value={totalIncome.toLocaleString()}
-            prefix="$"
+            value={formatCurrency(totalIncome)}
+            prefix=""
             change="+15.8% YTD"
             isPositive={true}
             icon={TrendingUp}
@@ -55,8 +55,8 @@ export default function AccountingKpis({
         >
           <StatCard
             title="Total Expenses"
-            value={totalExpenses.toLocaleString()}
-            prefix="$"
+            value={formatCurrency(totalExpenses)}
+            prefix=""
             change="+6.2% YTD"
             isPositive={false}
             icon={Wallet}
@@ -78,11 +78,11 @@ export default function AccountingKpis({
         >
           <StatCard
             title="Net Profit"
-            value={netProfit.toLocaleString()}
-            prefix="$"
+            value={formatCurrency(netProfit)}
+            prefix=""
             change="+18.4% YTD"
-            isPositive={true}
-            icon={DollarSign}
+            isPositive={netProfit >= 0}
+            icon={TrendingUp}
             iconColor="text-[#075EE8]"
             iconBg="bg-blue-50/90 border border-blue-100"
             badge="🔍 Traceable"
@@ -101,8 +101,8 @@ export default function AccountingKpis({
         >
           <StatCard
             title="Pending AR"
-            value={totalPending.toLocaleString()}
-            prefix="$"
+            value={formatCurrency(totalPending)}
+            prefix=""
             change="4 Invoices"
             isPositive={false}
             icon={Clock}

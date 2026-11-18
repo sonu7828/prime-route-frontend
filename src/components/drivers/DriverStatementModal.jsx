@@ -68,19 +68,19 @@ export default function DriverStatementModal({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl">
             <span className="text-slate-400 font-bold text-[10px] uppercase">Rental Leases Billed</span>
-            <p className="text-base font-extrabold text-[#0A1E42] mt-1">$1,200.00</p>
+            <p className="text-base font-extrabold text-[#0A1E42] mt-1">{formatCurrency(1200)}</p>
           </div>
           <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl">
             <span className="text-slate-400 font-bold text-[10px] uppercase">Tolls &amp; Violations</span>
-            <p className="text-base font-extrabold text-amber-600 mt-1">$106.00</p>
+            <p className="text-base font-extrabold text-amber-600 mt-1">{formatCurrency(106)}</p>
           </div>
           <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl">
             <span className="text-slate-400 font-bold text-[10px] uppercase">Total Payments Made</span>
-            <p className="text-base font-extrabold text-emerald-600 mt-1">${totalCredits.toFixed(2)}</p>
+            <p className="text-base font-extrabold text-emerald-600 mt-1">{formatCurrency(totalCredits)}</p>
           </div>
           <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl">
             <span className="text-blue-600 font-bold text-[10px] uppercase">Net Outstanding Balance</span>
-            <p className="text-base font-black text-[#075EE8] mt-1 font-mono">${netDue.toFixed(2)}</p>
+            <p className="text-base font-black text-[#075EE8] mt-1 font-mono">{formatCurrency(netDue)}</p>
           </div>
         </div>
 

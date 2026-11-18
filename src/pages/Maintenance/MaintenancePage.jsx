@@ -501,8 +501,8 @@ export default function MaintenancePage() {
         {/* Total Cost Card */}
         <StatCard
           title="Total Upkeep Spend"
-          value={stats.totalCost.toLocaleString()}
-          prefix="$"
+          value={formatCurrency(stats.totalCost)}
+          prefix=""
           icon={CheckCircle2}
           iconColor="text-emerald-600"
           iconBg="bg-emerald-50/90 border border-emerald-100"

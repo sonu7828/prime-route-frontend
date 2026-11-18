@@ -351,7 +351,7 @@ export default function AccountingPage() {
     setIsSubmitting(true);
     try {
       await accountingApi.createCharge(chargeData);
-      setNotification(`Charge "${chargeData.category}" ($${Number(chargeData.amount).toFixed(2)}) posted to database!`);
+      setNotification(`Charge "${chargeData.category}" (${formatCurrency(chargeData.amount)}) posted to database!`);
       await loadData();
     } catch (err) {
       console.error('Failed to post charge:', err);
@@ -367,7 +367,7 @@ export default function AccountingPage() {
     try {
       const created = await accountingApi.createPayment(newPayment);
       setSelectedPaymentReceipt(created || newPayment);
-      setNotification(`Payment of $${Number(newPayment.amount).toFixed(2)} recorded in database!`);
+      setNotification(`Payment of ${formatCurrency(newPayment.amount)} recorded in database!`);
       setIsPaymentModalOpen(false);
       await loadData();
     } catch (err) {
@@ -383,7 +383,7 @@ export default function AccountingPage() {
     setIsSubmitting(true);
     try {
       await accountingApi.createDeposit(newDep);
-      setNotification(`Security deposit of $${Number(newDep.depositAmount || newDep.amount).toFixed(2)} held in escrow database.`);
+      setNotification(`Security deposit of ${formatCurrency(newDep.depositAmount || newDep.amount)} held in escrow database.`);
       await loadData();
     } catch (err) {
       console.error('Failed to record deposit:', err);
@@ -415,7 +415,7 @@ export default function AccountingPage() {
     setIsSubmitting(true);
     try {
       await accountingApi.createRefund(newRef);
-      setNotification(`Refund of $${Number(newRef.amount).toFixed(2)} recorded in database.`);
+      setNotification(`Refund of ${formatCurrency(newRef.amount)} recorded in database.`);
       await loadData();
     } catch (err) {
       console.error('Failed to record refund:', err);
@@ -430,7 +430,7 @@ export default function AccountingPage() {
     setIsSubmitting(true);
     try {
       await accountingApi.createCredit(newCr);
-      setNotification(`Credit adjustment of $${Number(newCr.amount).toFixed(2)} applied in database.`);
+      setNotification(`Credit adjustment of ${formatCurrency(newCr.amount)} applied in database.`);
       await loadData();
     } catch (err) {
       console.error('Failed to add credit:', err);
@@ -461,7 +461,7 @@ export default function AccountingPage() {
     setIsSubmitting(true);
     try {
       await accountingApi.createPayable(newP);
-      setNotification(`Vendor payable bill "${newP.category}" ($${Number(newP.amount).toFixed(2)}) recorded in database.`);
+      setNotification(`Vendor payable bill "${newP.category}" (${formatCurrency(newP.amount)}) recorded in database.`);
       await loadData();
     } catch (err) {
       console.error('Failed to record payable:', err);
@@ -504,7 +504,7 @@ export default function AccountingPage() {
     setIsSubmitting(true);
     try {
       await accountingApi.createPayable(newExp);
-      setNotification(`Expense ${newExp.vendor || 'Vendor'} ($${Number(newExp.amount || 0).toLocaleString()}) logged in database.`);
+      setNotification(`Expense ${newExp.vendor || 'Vendor'} (${formatCurrency(newExp.amount || 0)}) logged in database.`);
       setIsExpenseModalOpen(false);
       await loadData();
     } catch (err) {

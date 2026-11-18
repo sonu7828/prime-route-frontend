@@ -1,7 +1,8 @@
 import React from 'react';
 import { Sparkles, CheckCircle2, XCircle, RotateCcw } from 'lucide-react';
 
-export default function AdminReviewBar({ roleName, onApprove, onReject, onReset }) {
+export default function AdminReviewBar({ roleName, activeRoleName, onApprove, onReject, onReset }) {
+  const displayRole = roleName || activeRoleName || 'Administrator';
   return (
     <div className="p-4 rounded-3xl bg-gradient-to-r from-slate-900 to-[#071D49] text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
       <div className="flex items-center gap-3">
@@ -10,7 +11,7 @@ export default function AdminReviewBar({ roleName, onApprove, onReject, onReset 
         </div>
         <div>
           <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-            Admin Testing Tools ({roleName} Mode)
+            Admin Testing Tools ({displayRole} Mode)
           </p>
           <p className="text-xs text-slate-300 mt-0.5">
             Simulate reviewing this employee's onboarding paperwork as an Administrator.

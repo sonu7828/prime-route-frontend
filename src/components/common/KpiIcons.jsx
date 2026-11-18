@@ -54,28 +54,53 @@ export const SolidSteeringWheelIcon = ({ className = "w-11 h-11" }) => (
   </svg>
 );
 
-// 3. Monthly Revenue: Solid royal blue circle disc with bold white $
-export const SolidDollarCircleIcon = ({ className = "w-11 h-11" }) => (
-  <svg
-    viewBox="0 0 24 24"
-    className={`${className} shrink-0`}
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    {/* Solid Blue Circle Disc */}
-    <circle cx="12" cy="12" r="10.5" fill="#075EE8" />
-    {/* Vertical Dollar Spine */}
-    <path d="M12 4.6V19.4" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" />
-    {/* S Curve */}
-    <path
-      d="M15.2 8.6C15.2 7.1 13.8 6 12 6C10.2 6 8.8 7.1 8.8 8.6C8.8 10.2 10.1 10.9 12 11.4C13.9 11.9 15.2 12.7 15.2 14.3C15.2 15.9 13.8 17 12 17C10.2 17 8.8 15.9 8.8 14.4"
-      stroke="#FFFFFF"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+// 3. Monthly Revenue: Solid royal blue circle disc with dynamic currency symbol
+export const SolidDollarCircleIcon = ({ className = "w-11 h-11", symbol }) => {
+  if (symbol && symbol !== '$') {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className={`${className} shrink-0`}
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="12" cy="12" r="10.5" fill="#075EE8" />
+        <text
+          x="12"
+          y={symbol.length >= 3 ? "15" : symbol.length === 2 ? "15.5" : "16.5"}
+          textAnchor="middle"
+          fill="#FFFFFF"
+          fontSize={symbol.length >= 3 ? "8" : symbol.length === 2 ? "10" : "13"}
+          fontWeight="900"
+          fontFamily="system-ui, -apple-system, sans-serif"
+        >
+          {symbol}
+        </text>
+      </svg>
+    );
+  }
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={`${className} shrink-0`}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Solid Blue Circle Disc */}
+      <circle cx="12" cy="12" r="10.5" fill="#075EE8" />
+      {/* Vertical Dollar Spine */}
+      <path d="M12 4.6V19.4" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" />
+      {/* S Curve */}
+      <path
+        d="M15.2 8.6C15.2 7.1 13.8 6 12 6C10.2 6 8.8 7.1 8.8 8.6C8.8 10.2 10.1 10.9 12 11.4C13.9 11.9 15.2 12.7 15.2 14.3C15.2 15.9 13.8 17 12 17C10.2 17 8.8 15.9 8.8 14.4"
+        stroke="#FFFFFF"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
 
 // 4. Monthly Expenses: Solid blue horizontal wallet with top fold and white clasp
 export const SolidWalletIcon = ({ className = "w-11 h-11" }) => (

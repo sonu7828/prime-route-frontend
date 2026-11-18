@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { usePermission } from '../../../auth/usePermission';
+import { formatCurrency } from '../../../utils/formatters';
 
 export default function ImportantAlertsCard({ onNavigate, alerts: propAlerts }) {
   const canRentals = usePermission('rentals', 'view').can;
@@ -48,7 +49,7 @@ export default function ImportantAlertsCard({ onNavigate, alerts: propAlerts }) 
     {
       id: 'alert-tickets',
       title: 'Unpaid Toll / Violation NYC-PARK-8819',
-      badge: '$75 Due',
+      badge: `${formatCurrency(75)} Due`,
       module: 'tolls-tickets',
       link: 'tolls-tickets',
       icon: Receipt,
@@ -71,8 +72,8 @@ export default function ImportantAlertsCard({ onNavigate, alerts: propAlerts }) 
     },
     {
       id: 'alert-balance',
-      title: '1 Driver with Outstanding Balance ($350)',
-      badge: '$350',
+      title: `1 Driver with Outstanding Balance (${formatCurrency(350)})`,
+      badge: formatCurrency(350),
       module: 'drivers',
       link: 'drivers',
       icon: Users,
