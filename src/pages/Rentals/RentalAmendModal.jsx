@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import Modal from '../../components/common/Modal';
 import { FormInput, FormTextarea } from '../../components/forms/FormInputs';
-import { formatDate, formatCurrency } from '../../utils/formatters';
+import { formatDate, formatCurrency, getCurrencySymbol } from '../../utils/formatters';
 import { useFleet } from '../../context/FleetContext';
 
 export default function RentalAmendModal({
@@ -227,10 +227,10 @@ export default function RentalAmendModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-200/60">
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Weekly Lease Rate ($)
+                  Weekly Lease Rate ({getCurrencySymbol()})
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">Current: ${currentWeeklyRate} ➔</span>
+                  <span className="text-xs text-slate-400">Current: {formatCurrency(currentWeeklyRate)} ➔</span>
                   <input
                     type="number"
                     value={newWeeklyRent}

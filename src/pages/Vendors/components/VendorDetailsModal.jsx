@@ -29,7 +29,7 @@ import {
 } from 'recharts';
 import Modal from '../../../components/common/Modal';
 import StatusBadge from '../../../components/common/StatusBadge';
-import { formatCurrency, formatDate } from '../../../utils/formatters';
+import { formatCurrency, formatDate, getCurrencySymbol } from '../../../utils/formatters';
 import { exportToCsv } from '../../../utils/exportCsv';
 
 export default function VendorDetailsModal({
@@ -439,7 +439,7 @@ export default function VendorDetailsModal({
                       tick={{ fill: '#64748B', fontSize: 10, fontWeight: 600 }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                      tickFormatter={(val) => `${getCurrencySymbol()}${(val / 1000).toFixed(0)}k`}
                     />
                     <Tooltip
                       formatter={(val) => [formatCurrency(val), 'Disbursed Spend']}

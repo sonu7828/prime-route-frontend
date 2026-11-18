@@ -10,7 +10,7 @@ import {
   Receipt
 } from 'lucide-react';
 import StatusBadge from '../../../components/common/StatusBadge';
-import { formatCurrency, formatDate } from '../../../utils/formatters';
+import { formatCurrency, formatDate, getCurrencySymbol } from '../../../utils/formatters';
 import { exportToCsv } from '../../../utils/exportCsv';
 import Modal from '../../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../../components/forms/FormInputs';
@@ -251,7 +251,7 @@ export default function ChargesTable({
               required
             />
             <FormInput
-              label="Amount ($)"
+              label={`Amount (${getCurrencySymbol()})`}
               type="number"
               step="0.01"
               value={newCharge.amount}

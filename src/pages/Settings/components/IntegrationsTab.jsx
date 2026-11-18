@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Layers,
-  CircleDollarSign,
+  Landmark,
   CreditCard,
   FileSignature,
   Smartphone,
@@ -18,7 +18,7 @@ const INTEGRATIONS = [
     name: 'QuickBooks Online',
     provider: 'Intuit',
     category: 'Accounting & General Ledger',
-    icon: CircleDollarSign,
+    icon: Landmark,
     iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-200',
     status: 'Not Connected',
     badgeColor: 'bg-slate-100 text-slate-600 border-slate-200',

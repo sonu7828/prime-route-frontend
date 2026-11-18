@@ -4,6 +4,7 @@ import Modal from '../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../components/forms/FormInputs';
 import { useFleet } from '../../context/FleetContext';
 import { isValidVin, isDuplicateVin } from '../../utils/validators';
+import { getCurrencySymbol } from '../../utils/formatters';
 
 const CONTROLLED_STATUSES = [
   'Available',
@@ -450,7 +451,7 @@ export default function VehicleModal({
 
             <div>
               <FormInput
-                label="Purchase Price ($)"
+                label={`Purchase Price (${getCurrencySymbol()})`}
                 name="purchasePrice"
                 type="number"
                 value={formData.purchasePrice}
@@ -487,7 +488,7 @@ export default function VehicleModal({
 
             <div>
               <FormInput
-                label="Financed Loan Amount ($)"
+                label={`Financed Loan Amount (${getCurrencySymbol()})`}
                 name="loanAmount"
                 type="number"
                 value={formData.loanAmount}
@@ -498,7 +499,7 @@ export default function VehicleModal({
 
             <div className="grid grid-cols-2 gap-2">
               <FormInput
-                label="Monthly Payment ($)"
+                label={`Monthly Payment (${getCurrencySymbol()})`}
                 name="monthlyPayment"
                 type="number"
                 value={formData.monthlyPayment}

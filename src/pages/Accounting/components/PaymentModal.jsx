@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, CheckCircle2, ShieldCheck, CreditCard } from 'lucide-react';
 import Modal from '../../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../../components/forms/FormInputs';
-import { formatCurrency } from '../../../utils/formatters';
+import { formatCurrency, getCurrencySymbol } from '../../../utils/formatters';
 
 export default function PaymentModal({
   isOpen,
@@ -181,7 +181,7 @@ export default function PaymentModal({
           />
 
           <FormInput
-            label="Amount Received ($)"
+            label={`Amount Received (${getCurrencySymbol()})`}
             name="amount"
             type="number"
             step="0.01"

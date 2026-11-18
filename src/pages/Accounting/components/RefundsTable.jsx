@@ -9,7 +9,7 @@ import {
   CornerUpLeft
 } from 'lucide-react';
 import StatusBadge from '../../../components/common/StatusBadge';
-import { formatCurrency, formatDate } from '../../../utils/formatters';
+import { formatCurrency, formatDate, getCurrencySymbol } from '../../../utils/formatters';
 import { exportToCsv } from '../../../utils/exportCsv';
 import Modal from '../../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../../components/forms/FormInputs';
@@ -200,7 +200,7 @@ export default function RefundsTable({
 
           <div className="grid grid-cols-2 gap-3">
             <FormInput
-              label="Refund Amount ($)"
+              label={`Refund Amount (${getCurrencySymbol()})`}
               type="number"
               step="0.01"
               value={newRefund.amount}

@@ -53,6 +53,13 @@ export default function DashboardPage({ onNavigate, onViewVehicle }) {
   // Live Database State
   const [dbDashboardData, setDbDashboardData] = useState(null);
   const [isDbLoading, setIsDbLoading] = useState(false);
+  const [, setCurrencyKey] = useState(0);
+
+  useEffect(() => {
+    const handleCurrencyChange = () => setCurrencyKey((k) => k + 1);
+    window.addEventListener('primeroute_currency_changed', handleCurrencyChange);
+    return () => window.removeEventListener('primeroute_currency_changed', handleCurrencyChange);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;

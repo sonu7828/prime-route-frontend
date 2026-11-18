@@ -398,8 +398,8 @@ export default function TollsTicketsPage() {
         {/* Card 1: Overdue Citations */}
         <StatCard
           title="Overdue Citations"
-          value={stats.overdueAmount}
-          prefix="$"
+          value={formatCurrency(stats.overdueAmount)}
+          prefix=""
           change={`${stats.overdueCount} Past Due`}
           isPositive={false}
           icon={AlertTriangle}
@@ -415,8 +415,8 @@ export default function TollsTicketsPage() {
         {/* Card 2: Unresolved Violations */}
         <StatCard
           title="Unresolved Violations"
-          value={stats.unresolvedAmount}
-          prefix="$"
+          value={formatCurrency(stats.unresolvedAmount)}
+          prefix=""
           change={`${stats.unresolvedCount} Pending Review`}
           isPositive={stats.unresolvedCount === 0}
           icon={Clock}
@@ -432,8 +432,8 @@ export default function TollsTicketsPage() {
         {/* Card 3: Charged to Drivers */}
         <StatCard
           title="Driver Recoveries"
-          value={stats.chargedAmount}
-          prefix="$"
+          value={formatCurrency(stats.chargedAmount)}
+          prefix=""
           change={`${stats.chargedCount} Recharged`}
           isPositive={true}
           icon={Zap}
@@ -441,7 +441,7 @@ export default function TollsTicketsPage() {
           iconBg="bg-blue-50/90 border border-blue-100"
           badge="Subledger Posted"
           badgeColor="bg-blue-50 text-[#075EE8] border-blue-200"
-          subtitle="Fines + $15 Admin Fees"
+          subtitle={`Fines + ${formatCurrency(15)} Admin Fees`}
           progress={90}
           progressColor="bg-[#075EE8]"
         />
@@ -449,8 +449,8 @@ export default function TollsTicketsPage() {
         {/* Card 4: Electronic Tollway Volume */}
         <StatCard
           title="E-ZPass Toll Summary"
-          value={stats.tollTotal.toFixed(2)}
-          prefix="$"
+          value={formatCurrency(stats.tollTotal)}
+          prefix=""
           change={`${stats.tollCount} Pings`}
           isPositive={true}
           icon={CreditCard}

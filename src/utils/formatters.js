@@ -1,12 +1,74 @@
 // Utility formatters for PrimeRoute
 
-export const formatCurrency = (amount) => {
-  if (amount === undefined || amount === null) return '$0';
-  return new Intl.NumberFormat('en-US', {
+export const CURRENCY_CONFIG = {
+  'USD ($)': { code: 'USD', symbol: '$', locale: 'en-US' },
+  'CAD ($)': { code: 'CAD', symbol: 'CA$', locale: 'en-US' },
+  'EUR (€)': { code: 'EUR', symbol: '€', locale: 'en-US' },
+  'GBP (£)': { code: 'GBP', symbol: '£', locale: 'en-US' },
+  'AUD ($)': { code: 'AUD', symbol: 'A$', locale: 'en-US' },
+
+  // Flexible direct aliases
+  'USD': { code: 'USD', symbol: '$', locale: 'en-US' },
+  'CAD': { code: 'CAD', symbol: 'CA$', locale: 'en-US' },
+  'EUR': { code: 'EUR', symbol: '€', locale: 'en-US' },
+  'GBP': { code: 'GBP', symbol: '£', locale: 'en-US' },
+  'AUD': { code: 'AUD', symbol: 'A$', locale: 'en-US' },
+};
+
+export const getActiveCurrency = () => {
+  try {
+    const saved = localStorage.getItem('primeroute_currency');
+    if (saved) {
+      if (CURRENCY_CONFIG[saved]) return CURRENCY_CONFIG[saved];
+      const upper = saved.toUpperCase().trim();
+      if (CURRENCY_CONFIG[upper]) return CURRENCY_CONFIG[upper];
+      if (upper.includes('EUR')) return CURRENCY_CONFIG['EUR (€)'];
+      if (upper.includes('GBP') || upper.includes('POUND')) return CURRENCY_CONFIG['GBP (£)'];
+      if (upper.includes('CAD')) return CURRENCY_CONFIG['CAD ($)'];
+      if (upper.includes('AUD')) return CURRENCY_CONFIG['AUD ($)'];
+      if (upper.includes('USD')) return CURRENCY_CONFIG['USD ($)'];
+    }
+    const settingsStr = localStorage.getItem('primeroute_general_settings');
+    if (settingsStr) {
+      const parsed = JSON.parse(settingsStr);
+      const c = parsed?.company?.currency;
+      if (c) {
+        if (CURRENCY_CONFIG[c]) return CURRENCY_CONFIG[c];
+        const upper = c.toUpperCase().trim();
+        if (CURRENCY_CONFIG[upper]) return CURRENCY_CONFIG[upper];
+        if (upper.includes('EUR')) return CURRENCY_CONFIG['EUR (€)'];
+        if (upper.includes('GBP') || upper.includes('POUND')) return CURRENCY_CONFIG['GBP (£)'];
+        if (upper.includes('CAD')) return CURRENCY_CONFIG['CAD ($)'];
+        if (upper.includes('AUD')) return CURRENCY_CONFIG['AUD ($)'];
+        if (upper.includes('USD')) return CURRENCY_CONFIG['USD ($)'];
+      }
+    }
+  } catch {
+    // fallback if localStorage is inaccessible
+  }
+  return CURRENCY_CONFIG['USD ($)'];
+};
+
+export const getCurrencySymbol = () => {
+  return getActiveCurrency().symbol;
+};
+
+export const formatCurrency = (amount, options = {}) => {
+  if (amount === undefined || amount === null || isNaN(Number(amount))) {
+    const sym = getCurrencySymbol();
+    return `${sym}0`;
+  }
+  const active = getActiveCurrency();
+  const maxDigits = options.maximumFractionDigits !== undefined ? options.maximumFractionDigits : 0;
+  const minDigits = options.minimumFractionDigits !== undefined ? options.minimumFractionDigits : 0;
+
+  return new Intl.NumberFormat(active.locale, {
     style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  }).format(amount);
+    currency: active.code,
+    maximumFractionDigits: maxDigits,
+    minimumFractionDigits: minDigits,
+    ...options
+  }).format(Number(amount));
 };
 
 export const formatNumber = (num) => {

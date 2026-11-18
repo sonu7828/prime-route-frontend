@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import StatCard from '../../../components/common/StatCard';
 import {
   SolidCarIcon,
@@ -7,6 +7,7 @@ import {
   SolidProfitChartIcon,
 } from '../../../components/common/KpiIcons';
 import { usePermission } from '../../../auth/usePermission';
+import { getCurrencySymbol, formatCurrency } from '../../../utils/formatters';
 
 // High-fidelity vector icon for Active Rentals (Car Key Fob)
 function SolidRentalsKeyIcon({ className = "w-11 h-11" }) {
@@ -63,6 +64,18 @@ export default function DashboardKpis({
   const canFinance = usePermission('accounting', 'view').can;
   const canDrivers = usePermission('drivers', 'view').can;
 
+  const [currencySymbol, setCurrencySymbol] = useState(getCurrencySymbol());
+
+  useEffect(() => {
+    const handleCurrencyChange = () => {
+      setCurrencySymbol(getCurrencySymbol());
+    };
+    window.addEventListener('primeroute_currency_changed', handleCurrencyChange);
+    return () => {
+      window.removeEventListener('primeroute_currency_changed', handleCurrencyChange);
+    };
+  }, []);
+
   const cards = [
     {
       id: 'vehicles',
@@ -89,11 +102,11 @@ export default function DashboardKpis({
     {
       id: 'revenue',
       title: filteredStats.revLabel || 'Monthly Revenue',
-      value: (filteredStats.monthlyRevenue ?? 48750).toLocaleString(),
-      prefix: '$',
+      value: formatCurrency(filteredStats.monthlyRevenue ?? 48750),
+      prefix: '',
       change: filteredStats.revenueChange || '+12.5%',
       isPositive: true,
-      customIcon: <SolidDollarCircleIcon className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 xl:w-8 xl:h-8 2xl:w-8.5 2xl:h-8.5" />,
+      customIcon: <SolidDollarCircleIcon symbol={currencySymbol} className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 xl:w-8 xl:h-8 2xl:w-8.5 2xl:h-8.5" />,
       onClick: () => onNavigate('accounting'),
       visible: canFinance,
       className: 'delay-150 cursor-pointer',
@@ -101,8 +114,8 @@ export default function DashboardKpis({
     {
       id: 'expenses',
       title: filteredStats.expLabel || 'Monthly Expenses',
-      value: (filteredStats.monthlyExpenses ?? 18420).toLocaleString(),
-      prefix: '$',
+      value: formatCurrency(filteredStats.monthlyExpenses ?? 18420),
+      prefix: '',
       change: filteredStats.expensesChange || '-3.2%',
       isPositive: false,
       customIcon: <SolidWalletIcon className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 xl:w-8 xl:h-8 2xl:w-8.5 2xl:h-8.5" />,
@@ -113,8 +126,8 @@ export default function DashboardKpis({
     {
       id: 'net-profit',
       title: 'Net Profit',
-      value: (filteredStats.netProfit ?? 30330).toLocaleString(),
-      prefix: '$',
+      value: formatCurrency(filteredStats.netProfit ?? 30330),
+      prefix: '',
       change: filteredStats.profitChange || '+18.4%',
       isPositive: filteredStats.isProfitPositive !== false,
       customIcon: <SolidProfitChartIcon className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 xl:w-8 xl:h-8 2xl:w-8.5 2xl:h-8.5" />,
@@ -125,8 +138,8 @@ export default function DashboardKpis({
     {
       id: 'outstanding-balances',
       title: 'Outstanding Balances',
-      value: (filteredStats.outstandingBalances ?? 3850).toLocaleString(),
-      prefix: '$',
+      value: formatCurrency(filteredStats.outstandingBalances ?? 3850),
+      prefix: '',
       change: filteredStats.balancesChange || '5 accounts due',
       isPositive: false,
       customIcon: <SolidOutstandingBalanceIcon className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 xl:w-8 xl:h-8 2xl:w-8.5 2xl:h-8.5" />,
