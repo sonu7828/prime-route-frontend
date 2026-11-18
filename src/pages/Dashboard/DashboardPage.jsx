@@ -206,27 +206,27 @@ export default function DashboardPage({ onNavigate, onViewVehicle }) {
 
   // Dynamic Metrics Computation from Live DB Data
   const fallbackStats = useMemo(() => {
-    const totalV = vehicles.length || 7;
-    const activeR = rentals.filter((r) => r.status === 'Active' || r.status === 'active').length || 5;
-    const activeD = drivers.filter((d) => d.status === 'Active' || d.status === 'active').length || 1;
-    const monthlyRev = rentals.reduce((sum, r) => sum + (Number(r.amount || (r.weeklyRent ? r.weeklyRent * 4.286 : 0)) || 0), 0) || 11692;
-    const monthlyExp = 14500;
+    const totalV = vehicles.length;
+    const activeR = rentals.filter((r) => r.status === 'Active' || r.status === 'active').length;
+    const activeD = drivers.filter((d) => d.status === 'Active' || d.status === 'active').length;
+    const monthlyRev = rentals.reduce((sum, r) => sum + (Number(r.amount || (r.weeklyRent ? r.weeklyRent * 4.286 : 0)) || 0), 0);
+    const monthlyExp = 0;
     const netProf = monthlyRev - monthlyExp;
-    const utilRate = totalV > 0 ? Math.round((activeR / totalV) * 100) : 71;
+    const utilRate = totalV > 0 ? Math.round((activeR / totalV) * 100) : 0;
 
     return {
       totalVehicles: totalV,
-      vehiclesChange: '+1 active in fleet',
+      vehiclesChange: `${totalV} active in fleet`,
       activeRentals: activeR,
       rentalsChange: `${utilRate}% leased`,
       activeDrivers: activeD,
-      driversChange: '+1 active driver',
+      driversChange: `${activeD} active driver${activeD === 1 ? '' : 's'}`,
       monthlyRevenue: monthlyRev,
       revLabel: 'Monthly Revenue',
-      revenueChange: '+100% active',
+      revenueChange: 'Active Leases',
       monthlyExpenses: monthlyExp,
       expLabel: 'Monthly Expenses',
-      expensesChange: '-10%',
+      expensesChange: '0%',
       netProfit: netProf,
       profitChange: netProf >= 0 ? '+100%' : '-10%',
       isProfitPositive: netProf >= 0,
@@ -255,12 +255,12 @@ export default function DashboardPage({ onNavigate, onViewVehicle }) {
     });
 
     return [
-      { name: 'Available', value: counts.Available || 2, color: '#10B981' },
-      { name: 'Reserved', value: counts.Reserved || 0, color: '#6366F1' },
-      { name: 'Rented', value: counts.Rented || 5, color: '#075EE8' },
-      { name: 'Maintenance', value: counts.Maintenance || 0, color: '#F97316' },
-      { name: 'Unavailable', value: counts.Unavailable || 0, color: '#EF4444' },
-      { name: 'Sold/Retired', value: counts['Sold/Retired'] || 0, color: '#94A3B8' }
+      { name: 'Available', value: counts.Available, color: '#10B981' },
+      { name: 'Reserved', value: counts.Reserved, color: '#6366F1' },
+      { name: 'Rented', value: counts.Rented, color: '#075EE8' },
+      { name: 'Maintenance', value: counts.Maintenance, color: '#F97316' },
+      { name: 'Unavailable', value: counts.Unavailable, color: '#EF4444' },
+      { name: 'Sold/Retired', value: counts['Sold/Retired'], color: '#94A3B8' }
     ];
   }, [dbDashboardData, vehicles]);
 
@@ -274,8 +274,8 @@ export default function DashboardPage({ onNavigate, onViewVehicle }) {
       name: v.name || `${v.make} ${v.model}`,
       make: v.make,
       model: v.model,
-      revenue: Math.round(11692 / (vehicles.length || 5)),
-      profit: Math.round(-2808 / (vehicles.length || 5))
+      revenue: v.revenue || (v.rate ? parseInt(String(v.rate).replace(/[^0-9]/g, ''), 10) * 30 : 0),
+      profit: v.revenue ? Math.round(v.revenue * 0.7) : 0
     }));
   }, [dbDashboardData, vehicles]);
 

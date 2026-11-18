@@ -116,13 +116,13 @@ export default function AccidentModal({
   };
 
   const handlePolicyChange = (policyId) => {
-    const pol = initialPolicies.find((p) => p.id === policyId);
+    const pol = FLEET_INSURANCE_POLICIES.find((p) => p.id === policyId);
     if (pol) {
       setFormData((prev) => ({
         ...prev,
         linkedPolicyId: pol.id,
         insuranceCarrier: pol.insurer,
-        deductibleTerms: pol.deductibleTerms || pol.deductible
+        deductibleTerms: pol.deductibleTerms || '$500 Collision Deductible'
       }));
     } else {
       setFormData((prev) => ({ ...prev, linkedPolicyId: policyId }));
@@ -327,7 +327,7 @@ export default function AccidentModal({
                   onChange={(e) => handlePolicyChange(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-medium"
                 >
-                  {initialPolicies.map((p) => (
+                  {FLEET_INSURANCE_POLICIES.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.insurer} ({p.policyNumber})
                     </option>
