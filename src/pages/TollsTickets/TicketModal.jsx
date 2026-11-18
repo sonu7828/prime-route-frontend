@@ -12,7 +12,8 @@ import {
   Paperclip,
   Check,
   Link,
-  RotateCcw
+  RotateCcw,
+  Loader2
 } from 'lucide-react';
 import Modal from '../../components/common/Modal';
 import { useFleet } from '../../context/FleetContext';
@@ -107,15 +108,15 @@ export default function TicketModal({
       const defaultVehicle = vehicles[0];
       const vehicleStr = defaultVehicle
         ? `${defaultVehicle.make} ${defaultVehicle.model} (${defaultVehicle.plate || defaultVehicle.id})`
-        : 'Hyundai Sonata SEL (PR-2024-HS)';
+        : '';
 
       setFormData({
         vehicle: vehicleStr,
-        vehiclePlate: defaultVehicle?.plate || 'PR-2024-HS',
+        vehiclePlate: defaultVehicle?.plate || '',
         driver: '',
         contract: '',
         issuingAuthority: 'NYC Department of Finance (DOF)',
-        referenceNumber: `NYC-PARK-${Math.floor(100000 + Math.random() * 900000)}`,
+        referenceNumber: '',
         incurredDate: new Date().toISOString().split('T')[0],
         receivedDate: new Date().toISOString().split('T')[0],
         amount: 75,
@@ -125,7 +126,7 @@ export default function TicketModal({
         balance: 90,
         status: 'Under Review',
         type: 'Parking Violation (Street Sweeping / No Standing)',
-        location: '45th St & 7th Ave, Manhattan',
+        location: '',
         paymentProofUpload: null,
         proofFileName: '',
         proofFileSize: '',
@@ -236,23 +237,32 @@ export default function TicketModal({
     setProofPreview(null);
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.referenceNumber || !formData.amount) return;
 
-    const record = {
-      ...formData,
-      id: formData.id || `TCK-${Math.floor(1000 + Math.random() * 9000)}`,
-      ticketNumber: formData.referenceNumber,
-      fineAmount: Number(formData.amount),
-      adminFee: Number(formData.adminFee),
-      driverCharge: Number(formData.driverCharge),
-      balance: formData.status === 'Paid' ? 0 : Number(formData.driverCharge),
-      chargedToDriver: formData.status === 'Charged' || formData.status === 'Paid'
-    };
+    setIsSubmitting(true);
+    try {
+      const record = {
+        ...formData,
+        id: formData.id || undefined,
+        ticketNumber: formData.referenceNumber,
+        fineAmount: Number(formData.amount),
+        adminFee: Number(formData.adminFee),
+        driverCharge: Number(formData.driverCharge),
+        balance: formData.status === 'Paid' ? 0 : Number(formData.driverCharge),
+        chargedToDriver: formData.status === 'Charged' || formData.status === 'Paid'
+      };
 
-    onSave(record);
-    onClose();
+      await onSave(record);
+      onClose();
+    } catch (err) {
+      console.error('Failed to submit citation:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -645,10 +655,21 @@ export default function TicketModal({
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer active:scale-95 flex items-center gap-2"
+            disabled={isSubmitting}
+            className="px-5 py-2.5 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer active:scale-95 flex items-center gap-2 disabled:opacity-60"
           >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{isEditing ? 'Save Citation Updates' : 'Record Violation Notice'}</span>
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4" />
+            )}
+            <span>
+              {isSubmitting
+                ? 'Saving to Database...'
+                : isEditing
+                ? 'Save Citation Updates'
+                : 'Record Violation Notice'}
+            </span>
           </button>
         </div>
       </form>

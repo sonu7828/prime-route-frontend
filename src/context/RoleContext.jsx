@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { ROLES_CONFIG, hasPermission } from '../auth/permissions';
+import { paperworkApi } from '../api/paperworkApi';
 
 export const ROLES = {
   OWNER: {
@@ -208,7 +209,24 @@ export function RoleProvider({ children }) {
     };
   });
 
-  // Save changes to localStorage
+  // Load live paperwork data from MySQL on mount
+  useEffect(() => {
+    let isMounted = true;
+    paperworkApi.getPaperwork()
+      .then((data) => {
+        if (isMounted && data) {
+          setPaperworkData(data);
+        }
+      })
+      .catch((err) => {
+        console.warn('Paperwork live load warning:', err.message);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Save changes to localStorage as offline fallback
   useEffect(() => {
     try {
       localStorage.setItem('primeroute_active_role', currentRoleId);
@@ -250,6 +268,10 @@ export function RoleProvider({ children }) {
   const updatePaperwork = (updater) => {
     setPaperworkData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      // Asynchronously persist to MySQL
+      paperworkApi.savePaperwork(next).catch((err) => {
+        console.error('Failed to sync paperwork to MySQL:', err);
+      });
       return next;
     });
   };

@@ -23,6 +23,7 @@ import { useFleet } from '../../context/FleetContext';
 import { exportToCsv } from '../../utils/exportCsv';
 import { awaitingInspectionVehicles } from '../../data/mockData';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { inspectionsApi } from '../../api/inspectionsApi';
 import Can from '../../auth/Can';
 
 export default function InspectionsPage() {
@@ -232,17 +233,29 @@ export default function InspectionsPage() {
   );
 
   // Handlers
-  const handleSaveInspection = (inspectionData) => {
-    if (editingInspection) {
-      setInspections((prev) =>
-        prev.map((i) => (i.id === inspectionData.id ? inspectionData : i))
-      );
-    } else {
-      setInspections((prev) => [inspectionData, ...prev]);
-      // If was from awaiting list, remove from awaiting
-      setAwaitingList((prev) =>
-        prev.filter((item) => item.plate !== inspectionData.plate && item.vehicle !== inspectionData.vehicle)
-      );
+  const handleSaveInspection = async (inspectionData) => {
+    try {
+      if (editingInspection && editingInspection.id && !String(editingInspection.id).startsWith('INS-TEMP-')) {
+        const updated = await inspectionsApi.updateInspection(editingInspection.rawId || editingInspection.id, inspectionData);
+        setInspections((prev) =>
+          prev.map((i) => (i.id === inspectionData.id ? updated : i))
+        );
+      } else {
+        const created = await inspectionsApi.createInspection(inspectionData);
+        setInspections((prev) => [created, ...prev]);
+        setAwaitingList((prev) =>
+          prev.filter((item) => item.plate !== inspectionData.plate && item.vehicle !== inspectionData.vehicle)
+        );
+      }
+    } catch (err) {
+      console.error('Failed to save inspection to MySQL:', err);
+      if (editingInspection) {
+        setInspections((prev) =>
+          prev.map((i) => (i.id === inspectionData.id ? inspectionData : i))
+        );
+      } else {
+        setInspections((prev) => [inspectionData, ...prev]);
+      }
     }
     setEditingInspection(null);
   };
@@ -278,23 +291,47 @@ export default function InspectionsPage() {
     setIsInspectionModalOpen(true);
   };
 
-  const handleSaveAccident = (accidentData) => {
-    if (editingAccident) {
-      setAccidents((prev) =>
-        prev.map((a) => (a.id === accidentData.id ? accidentData : a))
-      );
-    } else {
-      setAccidents((prev) => [accidentData, ...prev]);
+  const handleSaveAccident = async (accidentData) => {
+    try {
+      if (editingAccident && editingAccident.id) {
+        const updated = await inspectionsApi.updateAccident(editingAccident.rawId || editingAccident.id, accidentData);
+        setAccidents((prev) =>
+          prev.map((a) => (a.id === accidentData.id ? updated : a))
+        );
+      } else {
+        const created = await inspectionsApi.createAccident(accidentData);
+        setAccidents((prev) => [created, ...prev]);
+      }
+    } catch (err) {
+      console.error('Failed to save accident to MySQL:', err);
+      if (editingAccident) {
+        setAccidents((prev) =>
+          prev.map((a) => (a.id === accidentData.id ? accidentData : a))
+        );
+      } else {
+        setAccidents((prev) => [accidentData, ...prev]);
+      }
     }
     setEditingAccident(null);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deletingItem) return;
+    const targetItem = deletingItem.item;
     if (deletingItem.type === 'inspection') {
-      setInspections((prev) => prev.filter((i) => i.id !== deletingItem.item.id));
+      try {
+        await inspectionsApi.deleteInspection(targetItem.rawId || targetItem.id);
+      } catch (e) {
+        console.error('Delete inspection API err:', e);
+      }
+      setInspections((prev) => prev.filter((i) => i.id !== targetItem.id));
     } else {
-      setAccidents((prev) => prev.filter((a) => a.id !== deletingItem.item.id));
+      try {
+        await inspectionsApi.deleteAccident(targetItem.rawId || targetItem.id);
+      } catch (e) {
+        console.error('Delete accident API err:', e);
+      }
+      setAccidents((prev) => prev.filter((a) => a.id !== targetItem.id));
     }
     setDeletingItem(null);
   };
