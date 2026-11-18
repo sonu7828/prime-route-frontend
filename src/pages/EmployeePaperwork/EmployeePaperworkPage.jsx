@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Save,
   Send,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
+import { paperworkApi } from '../../api/paperworkApi';
 import PaperworkStepper from './components/PaperworkStepper';
 import AdminReviewBar from './components/AdminReviewBar';
 import SectionPersonal from './components/SectionPersonal';
@@ -20,25 +22,40 @@ export default function EmployeePaperworkPage() {
 
   // Local editable form state initialized from role context
   const [formData, setFormData] = useState(() => ({
-    personal: { ...paperworkData.personal },
-    employment: { ...paperworkData.employment },
-    documents: { ...paperworkData.documents },
-    agreements: { ...paperworkData.agreements }
+    personal: { ...(paperworkData?.personal || {}) },
+    employment: { ...(paperworkData?.employment || {}) },
+    documents: { ...(paperworkData?.documents || {}) },
+    agreements: { ...(paperworkData?.agreements || {}) }
   }));
+
+  // Sync formData whenever live backend paperworkData updates
+  useEffect(() => {
+    if (paperworkData && paperworkData.personal) {
+      setFormData({
+        personal: { ...paperworkData.personal },
+        employment: { ...paperworkData.employment },
+        documents: { ...paperworkData.documents },
+        agreements: { ...paperworkData.agreements }
+      });
+    }
+  }, [paperworkData]);
 
   const [errors, setErrors] = useState({});
   const [toastMessage, setToastMessage] = useState(null);
   const [isSubmitSuccessModalOpen, setIsSubmitSuccessModalOpen] = useState(false);
   const [reviewModalState, setReviewModalState] = useState({ isOpen: false, action: null }); // 'Approve' | 'Reject'
   const [adminNotes, setAdminNotes] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReviewing, setIsReviewing] = useState(false);
 
-  const status = paperworkData.status;
+  const status = paperworkData?.status || 'Draft';
 
   const showToast = (msg, type = 'success') => {
     setToastMessage({ text: msg, type });
     setTimeout(() => {
       setToastMessage(null);
-    }, 4000);
+    }, 4500);
   };
 
   // Field change handlers
@@ -84,7 +101,7 @@ export default function EmployeePaperworkPage() {
     }
   };
 
-  // Mock document upload handler
+  // Document upload handler
   const handleFileUpload = (docKey, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -139,11 +156,13 @@ export default function EmployeePaperworkPage() {
     if (!data.personal?.address?.trim()) newErrors.address = 'Street Address is required';
     if (!data.personal?.city?.trim()) newErrors.city = 'City is required';
     if (!data.personal?.state?.trim()) newErrors.state = 'State is required';
-    if (!data.personal?.zipCode?.trim()) newErrors.zipCode = 'ZIP Code is required';
-    if (!data.personal?.emergencyContactName?.trim()) {
+    if (!data.personal?.zipCode?.trim() && !data.personal?.zip?.trim()) {
+      newErrors.zipCode = 'ZIP Code is required';
+    }
+    if (!data.personal?.emergencyContactName?.trim() && !data.personal?.emergencyName?.trim()) {
       newErrors.emergencyContactName = 'Emergency contact name is required';
     }
-    if (!data.personal?.emergencyContactPhone?.trim()) {
+    if (!data.personal?.emergencyContactPhone?.trim() && !data.personal?.emergencyPhone?.trim()) {
       newErrors.emergencyContactPhone = 'Emergency contact phone is required';
     }
 
@@ -151,35 +170,51 @@ export default function EmployeePaperworkPage() {
     if (!data.employment?.position?.trim()) newErrors.position = 'Job Position is required';
     if (!data.employment?.department?.trim()) newErrors.department = 'Department is required';
     if (!data.employment?.employmentType?.trim()) newErrors.employmentType = 'Employment Type is required';
-    if (!data.employment?.joiningDate?.trim()) newErrors.joiningDate = 'Joining Date is required';
-    if (!data.employment?.assignedManager?.trim()) newErrors.assignedManager = 'Assigned Manager is required';
+    if (!data.employment?.joiningDate?.trim() && !data.employment?.startDate?.trim()) {
+      newErrors.joiningDate = 'Joining Date is required';
+    }
+    if (!data.employment?.assignedManager?.trim() && !data.employment?.manager?.trim()) {
+      newErrors.assignedManager = 'Assigned Manager is required';
+    }
 
     // Document validation (Gov ID and Driving License are primary compliance requirements)
     if (!data.documents?.governmentId) newErrors.governmentId = 'Government ID document is required';
-    if (!data.documents?.drivingLicense) newErrors.drivingLicense = 'Driving License is required';
+    if (!data.documents?.drivingLicense && !data.documents?.driversLicense) {
+      newErrors.drivingLicense = 'Driving License is required';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Actions
-  const handleSaveDraft = () => {
-    updatePaperwork({
-      status: 'Draft',
-      personal: formData.personal,
-      employment: formData.employment,
-      documents: formData.documents,
-      agreements: formData.agreements,
-      lastUpdated: new Date().toISOString()
-    });
-    showToast('Draft saved successfully! You can resume filling out this form at any time.', 'success');
+  const handleSaveDraft = async () => {
+    try {
+      setIsSaving(true);
+      const payload = {
+        id: paperworkData?.id,
+        status: 'draft',
+        personal: formData.personal,
+        employment: formData.employment,
+        documents: formData.documents,
+        agreements: formData.agreements,
+        lastUpdated: new Date().toISOString()
+      };
+      const res = await paperworkApi.savePaperwork(payload);
+      updatePaperwork(res || payload);
+      showToast('Draft saved successfully! You can resume filling out this form at any time.', 'success');
+    } catch (err) {
+      showToast(`Save draft failed: ${err.message}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSubmitPaperwork = (e) => {
+  const handleSubmitPaperwork = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
 
     // Auto-complete agreements & signature if submitting
-    const signer = `${formData.personal?.firstName || ''} ${formData.personal?.lastName || ''}`.trim() || 'Authorized Staff';
+    const signer = `${formData.personal?.firstName || ''} ${formData.personal?.lastName || ''}`.trim() || 'David Miller';
     const finalSignature = formData.agreements?.digitalSignature || `e-signed:${signer}`;
     const updatedAgreements = {
       ...formData.agreements,
@@ -199,46 +234,82 @@ export default function EmployeePaperworkPage() {
       return;
     }
 
-    const timestamp = new Date().toISOString();
-    updatePaperwork({
-      status: 'Pending Review',
-      personal: currentFormData.personal,
-      employment: currentFormData.employment,
-      documents: currentFormData.documents,
-      agreements: updatedAgreements,
-      submittedAt: timestamp,
-      lastUpdated: timestamp
-    });
+    try {
+      setIsSubmitting(true);
+      const timestamp = new Date().toISOString();
+      const payload = {
+        id: paperworkData?.id,
+        status: 'submitted',
+        personal: currentFormData.personal,
+        employment: currentFormData.employment,
+        documents: currentFormData.documents,
+        agreements: updatedAgreements,
+        submittedAt: timestamp,
+        lastUpdated: timestamp
+      };
 
-    setIsSubmitSuccessModalOpen(true);
-    showToast('✓ Paperwork submitted successfully! Status updated to Pending Review.', 'success');
+      const res = await paperworkApi.savePaperwork(payload);
+      updatePaperwork(res || payload);
+      setIsSubmitSuccessModalOpen(true);
+      showToast('✓ Paperwork submitted successfully! Status updated to Pending Review.', 'success');
+    } catch (err) {
+      showToast(`Submission failed: ${err.message}`, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Admin / Manager Review test handlers
-  const handleAdminApprove = () => {
-    updatePaperwork({
-      status: 'Approved',
-      reviewNotes: adminNotes || 'All onboarding documents verified and accepted by compliance team.'
-    });
-    setReviewModalState({ isOpen: false, action: null });
-    showToast('Paperwork approved successfully! Employee profile status updated to Active.', 'success');
+  const handleAdminApprove = async () => {
+    try {
+      setIsReviewing(true);
+      const notes = adminNotes || 'All onboarding documents verified and accepted by compliance team.';
+      const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 1, 'approve', notes);
+      updatePaperwork(res || {
+        status: 'Approved',
+        reviewNotes: notes
+      });
+      setReviewModalState({ isOpen: false, action: null });
+      showToast('Paperwork approved successfully! Employee profile status updated to Active.', 'success');
+    } catch (err) {
+      showToast(`Approval failed: ${err.message}`, 'error');
+    } finally {
+      setIsReviewing(false);
+    }
   };
 
-  const handleAdminReject = () => {
-    updatePaperwork({
-      status: 'Rejected',
-      reviewNotes: adminNotes || 'Please re-upload a clearer copy of your Driving License with expiration date clearly legible.'
-    });
-    setReviewModalState({ isOpen: false, action: null });
-    showToast('Paperwork rejected with feedback notes. Employee notified to resubmit.', 'error');
+  const handleAdminReject = async () => {
+    try {
+      setIsReviewing(true);
+      const notes = adminNotes || 'Please re-upload a clearer copy of your Driving License with expiration date clearly legible.';
+      const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 1, 'reject', notes);
+      updatePaperwork(res || {
+        status: 'Rejected',
+        reviewNotes: notes
+      });
+      setReviewModalState({ isOpen: false, action: null });
+      showToast('Paperwork rejected with feedback notes. Employee notified to resubmit.', 'error');
+    } catch (err) {
+      showToast(`Action failed: ${err.message}`, 'error');
+    } finally {
+      setIsReviewing(false);
+    }
   };
 
-  const handleAdminReset = () => {
-    updatePaperwork({
-      status: 'Draft',
-      reviewNotes: ''
-    });
-    showToast('Paperwork status reset to Draft for testing.', 'success');
+  const handleAdminReset = async () => {
+    try {
+      setIsReviewing(true);
+      const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 1, 'reset', '');
+      updatePaperwork(res || {
+        status: 'Draft',
+        reviewNotes: ''
+      });
+      showToast('Paperwork status reset to Draft for testing.', 'success');
+    } catch (err) {
+      showToast(`Reset failed: ${err.message}`, 'error');
+    } finally {
+      setIsReviewing(false);
+    }
   };
 
   return (
@@ -276,19 +347,21 @@ export default function EmployeePaperworkPage() {
           <button
             type="button"
             onClick={handleSaveDraft}
-            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-[#0A1E42] border border-slate-200 font-bold text-xs shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+            disabled={isSaving || isSubmitting}
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-[#0A1E42] border border-slate-200 font-bold text-xs shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-60"
           >
-            <Save className="w-4 h-4 text-slate-500" />
-            Save as Draft
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-slate-500" /> : <Save className="w-4 h-4 text-slate-500" />}
+            {isSaving ? 'Saving...' : 'Save as Draft'}
           </button>
 
           <button
             type="button"
             onClick={handleSubmitPaperwork}
-            className="px-5 py-2.5 rounded-xl bg-[#075EE8] hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+            disabled={isSaving || isSubmitting}
+            className="px-5 py-2.5 rounded-xl bg-[#075EE8] hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-60"
           >
-            <Send className="w-4 h-4" />
-            Submit Paperwork
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {isSubmitting ? 'Submitting...' : 'Submit Paperwork'}
           </button>
         </div>
       </div>
@@ -296,15 +369,16 @@ export default function EmployeePaperworkPage() {
       {/* Top Paperwork Status Lifecycle Indicator */}
       <PaperworkStepper
         status={status}
-        submissionId={paperworkData.submissionId}
-        submittedAt={paperworkData.submittedAt}
-        reviewNotes={paperworkData.reviewNotes}
+        submissionId={paperworkData?.submissionId || 'PR-SUB-2026-0001'}
+        submittedAt={paperworkData?.submittedAt}
+        reviewNotes={paperworkData?.reviewNotes}
       />
 
       {/* Admin / Manager Review Simulation Bar */}
       {currentRoleId !== 'readonly_manager' && (
         <AdminReviewBar
-          activeRoleName={activeRole.name}
+          roleName={activeRole?.name}
+          activeRoleName={activeRole?.name}
           onApprove={() => {
             setReviewModalState({ isOpen: true, action: 'Approve' });
             setAdminNotes('All documentation verified. Driver cleared for fleet operations.');
@@ -354,18 +428,20 @@ export default function EmployeePaperworkPage() {
             <button
               type="button"
               onClick={handleSaveDraft}
-              className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              disabled={isSaving || isSubmitting}
+              className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
             >
-              <Save className="w-4 h-4" />
-              Save as Draft
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-slate-500" /> : <Save className="w-4 h-4" />}
+              {isSaving ? 'Saving...' : 'Save as Draft'}
             </button>
 
             <button
               type="submit"
-              className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-[#075EE8] hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              disabled={isSaving || isSubmitting}
+              className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-[#075EE8] hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-60"
             >
-              <Send className="w-4 h-4" />
-              Submit Paperwork
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {isSubmitting ? 'Submitting...' : 'Submit Paperwork'}
             </button>
           </div>
         </div>
@@ -375,7 +451,7 @@ export default function EmployeePaperworkPage() {
       <SubmissionSuccessModal
         isOpen={isSubmitSuccessModalOpen}
         onClose={() => setIsSubmitSuccessModalOpen(false)}
-        paperworkData={paperworkData}
+        paperworkData={paperworkData || {}}
         formData={formData}
       />
 
