@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   AlertCircle
 } from 'lucide-react';
-import { mockVehicles, mockDrivers } from '../../data/mockData';
+import { useFleet } from '../../context/FleetContext';
 
 export default function InspectionModal({
   isOpen,
@@ -22,10 +22,12 @@ export default function InspectionModal({
   onSave,
   inspection = null,
 }) {
+  const { vehicles, drivers, rentals } = useFleet();
+
   const [formData, setFormData] = useState({
     inspectionNumber: '',
     type: 'Check-out (Pickup)',
-    contractId: 'RNT-2025-001',
+    contractId: 'N/A',
     vehicle: '',
     plate: '',
     driver: '',
@@ -39,7 +41,7 @@ export default function InspectionModal({
     windshieldStatus: 'Clear / No Cracks',
     spareTirePresent: true,
     damageClassification: 'No Damage',
-    existingDamage: 'Minor 0.5-inch stone chip on lower front bumper (baseline recorded).',
+    existingDamage: 'No pre-existing damage recorded.',
     newDamage: 'None. Clean check-out handover.',
     inspector: 'Marcus Brody (Fleet Tech)',
     status: 'Passed',
@@ -63,19 +65,21 @@ export default function InspectionModal({
         time: inspection.time || '10:00 AM'
       });
     } else {
-      const defaultVehicle = mockVehicles[0] || { name: 'Toyota Camry SE', plate: 'PR-2024-TC' };
-      const defaultDriver = mockDrivers[0] || { name: 'Sarah Jenkins' };
+      const defaultVehicle = (vehicles && vehicles[0]) || { name: 'Toyota Camry SE', plate: 'PR-2024-TC', rawMileage: 15200 };
+      const defaultDriver = (drivers && drivers[0]) || { name: 'Unassigned' };
+      const matchingRental = (rentals || []).find((r) => r.vehicleId === defaultVehicle?.id || (r.vehicle && defaultVehicle?.plate && r.vehicle.includes(defaultVehicle.plate)));
+
       setFormData({
         id: `INS-${Date.now()}`,
         inspectionNumber: `INSP-${Math.floor(1000 + Math.random() * 9000)}`,
         type: 'Check-out (Pickup)',
-        contractId: 'RNT-2025-001',
-        vehicle: defaultVehicle.name,
-        plate: defaultVehicle.plate,
-        driver: defaultDriver.name,
+        contractId: matchingRental?.id || (rentals && rentals[0]?.id) || 'N/A',
+        vehicle: defaultVehicle.name || `${defaultVehicle.make} ${defaultVehicle.model}`,
+        plate: defaultVehicle.plate || 'PR-FLEET',
+        driver: defaultVehicle.driver && defaultVehicle.driver !== 'Unassigned' ? defaultVehicle.driver : defaultDriver.name,
         date: new Date().toISOString().split('T')[0],
         time: '10:00 AM',
-        odometer: 15200,
+        odometer: defaultVehicle.rawMileage !== undefined ? defaultVehicle.rawMileage : 15200,
         fuelLevel: 100,
         exteriorCondition: 'Pristine / Clean',
         interiorCondition: 'Clean & Sanitized',
@@ -83,28 +87,36 @@ export default function InspectionModal({
         windshieldStatus: 'Clear / No Cracks',
         spareTirePresent: true,
         damageClassification: 'No Damage',
-        existingDamage: 'Minor 0.5-inch stone chip on lower front bumper (baseline recorded).',
-        newDamage: 'None. Clean handover.',
+        existingDamage: 'No pre-existing damage recorded.',
+        newDamage: 'None. Clean check-out handover.',
         inspector: 'Marcus Brody (Fleet Tech)',
         status: 'Passed',
         notes: '',
-        driverSignature: defaultDriver.name,
+        driverSignature: defaultVehicle.driver && defaultVehicle.driver !== 'Unassigned' ? defaultVehicle.driver : defaultDriver.name,
         driverAcknowledged: true,
-        photos: [
-          { id: 1, label: 'Front Exterior', url: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=500&auto=format&fit=crop&q=60' },
-          { id: 2, label: 'Rear Bumper & Trunk', url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=500&auto=format&fit=crop&q=60' }
-        ]
+        photos: []
       });
     }
-  }, [inspection, isOpen]);
+  }, [inspection, isOpen, vehicles, drivers, rentals]);
 
   const handleVehicleChange = (vehicleName) => {
-    const selected = mockVehicles.find((v) => v.name === vehicleName);
+    const selected = (vehicles || []).find((v) => (v.name === vehicleName || `${v.make} ${v.model}` === vehicleName));
+    const matchingRental = (rentals || []).find((r) => r.vehicleId === selected?.id || (r.vehicle && selected?.plate && r.vehicle.includes(selected.plate)));
+
     setFormData((prev) => ({
       ...prev,
       vehicle: vehicleName,
       plate: selected?.plate || prev.plate,
-      odometer: selected?.mileage ? parseInt(selected.mileage.replace(/[^0-9]/g, '')) || prev.odometer : prev.odometer
+      odometer: selected?.rawMileage !== undefined
+        ? selected.rawMileage
+        : (selected?.mileage ? parseInt(String(selected.mileage).replace(/[^0-9]/g, ''), 10) || prev.odometer : prev.odometer),
+      driver: selected?.driver && selected.driver !== 'Unassigned'
+        ? selected.driver
+        : (matchingRental?.driver || prev.driver),
+      driverSignature: selected?.driver && selected.driver !== 'Unassigned'
+        ? selected.driver
+        : (matchingRental?.driver || prev.driver),
+      contractId: matchingRental?.id || prev.contractId
     }));
   };
 
@@ -194,11 +206,14 @@ export default function InspectionModal({
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
                 required
               >
-                {mockVehicles.map((v) => (
-                  <option key={v.id} value={v.name}>
-                    {v.name} ({v.plate})
-                  </option>
-                ))}
+                {(vehicles || []).map((v) => {
+                  const label = v.name || `${v.make} ${v.model}`;
+                  return (
+                    <option key={v.id} value={label}>
+                      {label} ({v.plate})
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -218,7 +233,8 @@ export default function InspectionModal({
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
                 required
               >
-                {mockDrivers.map((d) => (
+                <option value="Unassigned">Unassigned</option>
+                {(drivers || []).map((d) => (
                   <option key={d.id} value={d.name}>
                     {d.name}
                   </option>
@@ -230,13 +246,18 @@ export default function InspectionModal({
               <label className="block text-xs font-bold text-slate-700 mb-1">
                 Related Contract #
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.contractId}
                 onChange={(e) => setFormData((prev) => ({ ...prev, contractId: e.target.value }))}
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-                placeholder="RNT-2025-001"
-              />
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="N/A">N/A (Routine Inspection)</option>
+                {(rentals || []).map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.id} ({r.customer || r.driver})
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

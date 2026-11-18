@@ -21,20 +21,70 @@ import AccidentsTable from './components/AccidentsTable';
 import AwaitingInspectionsTable from './components/AwaitingInspectionsTable';
 import { useFleet } from '../../context/FleetContext';
 import { exportToCsv } from '../../utils/exportCsv';
-import { awaitingInspectionVehicles } from '../../data/mockData';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { inspectionsApi } from '../../api/inspectionsApi';
 import Can from '../../auth/Can';
 
 export default function InspectionsPage() {
-  const { inspections, setInspections, accidents, setAccidents } = useFleet();
+  const { inspections, setInspections, accidents, setAccidents, vehicles, rentals, drivers } = useFleet();
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'awaiting' | 'pickup' | 'return' | 'damaged' | 'accidents'
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
 
-  // Awaiting inspections list
-  const [awaitingList, setAwaitingList] = useState(awaitingInspectionVehicles);
+  // Dynamic awaiting inspections derived from real fleet contracts and vehicle status
+  const awaitingList = useMemo(() => {
+    const list = [];
+    const inspectionPlates = new Set((inspections || []).map((i) => (i.plate || '').toUpperCase()));
+    const inspectionContracts = new Set((inspections || []).map((i) => (i.contractId || '').toUpperCase()));
+
+    (rentals || []).forEach((r) => {
+      const contractUpper = (r.id || '').toUpperCase();
+      const hasInspection = inspectionContracts.has(contractUpper);
+      if (!hasInspection && (r.status === 'Active' || r.status === 'Draft' || r.agreementStatus === 'Signed')) {
+        const plate = r.agreementData?.plate || (r.vehicle?.match(/\(([^)]+)\)/)?.[1]) || 'PR-FLEET';
+        list.push({
+          id: `AWT-${r.id}`,
+          vehicle: r.vehicle?.replace(/\s*\([^)]*\)/, '') || 'Fleet Vehicle',
+          vehicleId: r.vehicleId || 'N/A',
+          plate: plate,
+          type: 'Check-out (Pickup)',
+          driver: r.driver || r.customer || 'Assigned Driver',
+          driverId: r.driverId || null,
+          contractId: r.id,
+          scheduledDate: r.startDate || new Date().toISOString().split('T')[0],
+          odometerExpected: r.pickupOdometer || 15000,
+          fuelEstimated: 'Full (100%)',
+          priority: 'Urgent',
+          status: 'Awaiting Handover Inspection',
+          reason: `Active rental contract ${r.id} requires certified pre-delivery handover sign-off.`
+        });
+      }
+    });
+
+    (vehicles || []).forEach((v) => {
+      if (v.status === 'Maintenance') {
+        list.push({
+          id: `AWT-MAINT-${v.id}`,
+          vehicle: v.name || `${v.make} ${v.model}`,
+          vehicleId: v.id,
+          plate: v.plate || 'PR-FLEET',
+          type: 'Maintenance Release Audit',
+          driver: v.driver || 'Fleet Workshop',
+          driverId: null,
+          contractId: 'N/A',
+          scheduledDate: new Date().toISOString().split('T')[0],
+          odometerExpected: v.rawMileage || 20000,
+          fuelEstimated: 'As-is',
+          priority: 'Standard',
+          status: 'In Maintenance',
+          reason: 'Vehicle currently in garage; requires certified condition inspection prior to dispatch.'
+        });
+      }
+    });
+
+    return list;
+  }, [rentals, vehicles, inspections]);
 
   // Multi-Filter State
   const [typeFilter, setTypeFilter] = useState('All');
@@ -243,9 +293,6 @@ export default function InspectionsPage() {
       } else {
         const created = await inspectionsApi.createInspection(inspectionData);
         setInspections((prev) => [created, ...prev]);
-        setAwaitingList((prev) =>
-          prev.filter((item) => item.plate !== inspectionData.plate && item.vehicle !== inspectionData.vehicle)
-        );
       }
     } catch (err) {
       console.error('Failed to save inspection to MySQL:', err);
@@ -416,17 +463,31 @@ export default function InspectionsPage() {
                 <h4 className="text-xs font-extrabold text-[#0A1E42]">
                   {awaitingList.length} Vehicles Awaiting Handover Inspection
                 </h4>
-                <span className="px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full">
-                  Action Required
+                <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-full ${
+                  awaitingList.length > 0 ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'
+                }`}>
+                  {awaitingList.length > 0 ? 'Action Required' : 'All Clear'}
                 </span>
               </div>
               <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                Returned leases & pending checkout units require certified odometer, fuel, and condition sign-off.
+                {awaitingList.length > 0
+                  ? 'Returned leases & pending checkout units require certified odometer, fuel, and condition sign-off.'
+                  : 'All fleet handovers, returns, and maintenance release inspections are up to date.'}
               </p>
-              <div className="flex items-center gap-2 mt-2 text-[11px] font-semibold text-amber-800">
-                <span>• Toyota RAV4 (PR-2024-TR)</span>
-                <span>• Ford F-150 (PR-2024-FF)</span>
-              </div>
+              {awaitingList.length > 0 ? (
+                <div className="flex items-center gap-2 mt-2 text-[11px] font-semibold text-amber-800 flex-wrap">
+                  {awaitingList.slice(0, 3).map((item, idx) => (
+                    <span key={item.id || idx}>
+                      • {item.vehicle} ({item.plate})
+                    </span>
+                  ))}
+                  {awaitingList.length > 3 && <span>+{awaitingList.length - 3} more</span>}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mt-2 text-[11px] font-semibold text-emerald-800">
+                  <span>✓ 100% of fleet handovers signed off</span>
+                </div>
+              )}
             </div>
           </div>
           <button
