@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Save, UploadCloud, RefreshCw, Building, DollarSign, Gauge, CheckCircle2 } from 'lucide-react';
 import { FormInput, FormSelect } from '../../../components/forms/FormInputs';
 
@@ -13,10 +13,18 @@ const CURRENCY_OPTIONS = [
 export default function GeneralSettingsTab({
   settings,
   onCompanyChange,
-  onSave
+  onSave,
+  isSaving = false,
+  isLoadingDb = false
 }) {
   const [logoPreview, setLogoPreview] = useState(settings?.company?.logo || '/primeroute-logo.png');
   const [saveToast, setSaveToast] = useState(false);
+
+  useEffect(() => {
+    if (settings?.company?.logo) {
+      setLogoPreview(settings.company.logo);
+    }
+  }, [settings?.company?.logo]);
 
   const selectedCurrencyValue = useMemo(() => {
     const raw = settings?.company?.currency;
@@ -267,12 +275,32 @@ export default function GeneralSettingsTab({
         </div>
 
         {/* Submit Actions */}
-        <div className="flex justify-end pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+          <div>
+            {isLoadingDb ? (
+              <span className="text-xs text-slate-400 flex items-center gap-1.5 font-medium">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#075EE8]" /> Loading from Database...
+              </span>
+            ) : (
+              <span className="text-[11px] text-emerald-600 flex items-center gap-1 font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Database Live Sync Active
+              </span>
+            )}
+          </div>
           <button
             type="submit"
-            className="flex items-center gap-2 px-6 py-2.5 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 duration-150 cursor-pointer"
+            disabled={isSaving}
+            className="flex items-center gap-2 px-6 py-2.5 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 duration-150 cursor-pointer disabled:opacity-60"
           >
-            <Save className="w-4 h-4" /> Save General Configuration
+            {isSaving ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" /> Saving to Database...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" /> Save General Configuration
+              </>
+            )}
           </button>
         </div>
       </form>

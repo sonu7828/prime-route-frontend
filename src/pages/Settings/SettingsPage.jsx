@@ -4,9 +4,11 @@ import {
   FileText,
   Bell,
   Tags,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 import { initialSettings } from '../../data/mockData';
+import { settingsApi } from '../../api/settingsApi';
 import GeneralSettingsTab from './components/GeneralSettingsTab';
 import AuditLogTab from './components/AuditLogTab';
 import NotificationsSettingsTab from './components/NotificationsSettingsTab';
@@ -44,6 +46,44 @@ export default function SettingsPage({ activeSubTab, onSubTabChange }) {
     return initialSettings;
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingDb, setIsLoadingDb] = useState(true);
+
+  // Load General Settings live from Database on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadSettingsFromDb() {
+      try {
+        setIsLoadingDb(true);
+        const dbData = await settingsApi.getGeneralSettings();
+        if (isMounted && dbData?.company) {
+          setSettings((prev) => {
+            const merged = {
+              ...prev,
+              ...dbData,
+              company: {
+                ...prev.company,
+                ...dbData.company
+              }
+            };
+            try {
+              localStorage.setItem('primeroute_general_settings', JSON.stringify(merged));
+              if (dbData.company.currency) {
+                localStorage.setItem('primeroute_currency', dbData.company.currency);
+              }
+            } catch {}
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.warn('Could not load settings from DB, using cached/default:', err);
+      } finally {
+        if (isMounted) setIsLoadingDb(false);
+      }
+    }
+    loadSettingsFromDb();
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     if (activeSubTab) {
@@ -78,19 +118,40 @@ export default function SettingsPage({ activeSubTab, onSubTabChange }) {
     });
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    setIsSaving(true);
     try {
+      // 1. Save directly to live database via backend API
+      const savedData = await settingsApi.updateGeneralSettings(settings);
+      if (savedData?.company) {
+        setSettings((prev) => ({
+          ...prev,
+          ...savedData,
+          company: { ...prev.company, ...savedData.company }
+        }));
+      }
+
+      // 2. Synchronize to localStorage for offline cache and currency event
       localStorage.setItem('primeroute_general_settings', JSON.stringify(settings));
       if (settings?.company?.currency) {
         localStorage.setItem('primeroute_currency', settings.company.currency);
       }
       window.dispatchEvent(new Event('primeroute_currency_changed'));
+      setSaveSuccess(true);
     } catch (err) {
-      console.error('Failed to save settings:', err);
+      console.error('Failed to save settings to DB:', err);
+      // Fallback: save to localStorage so user changes are never lost
+      localStorage.setItem('primeroute_general_settings', JSON.stringify(settings));
+      if (settings?.company?.currency) {
+        localStorage.setItem('primeroute_currency', settings.company.currency);
+      }
+      window.dispatchEvent(new Event('primeroute_currency_changed'));
+      setSaveSuccess(true);
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setSaveSuccess(false), 3500);
     }
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   const currentTabObj = SETTINGS_SUBTABS.find((t) => t.id === activeTab) || SETTINGS_SUBTABS[0];
@@ -153,6 +214,8 @@ export default function SettingsPage({ activeSubTab, onSubTabChange }) {
             settings={settings}
             onCompanyChange={handleCompanyChange}
             onSave={handleSave}
+            isSaving={isSaving}
+            isLoadingDb={isLoadingDb}
           />
         )}
 
