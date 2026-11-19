@@ -34,15 +34,28 @@ export default function DigitalSignaturePad({
     ctx.lineWidth = 2.5;
 
     // Load initial signature if provided
-    if (initialSignature && typeof initialSignature === 'string' && initialSignature.startsWith('data:image')) {
-      const img = new Image();
-      img.onload = () => {
+    if (initialSignature && typeof initialSignature === 'string') {
+      if (initialSignature.startsWith('data:image')) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          ctx.drawImage(img, 0, 0, rect.width, rect.height);
+          setHasDrawn(true);
+          setIsSaved(true);
+        };
+        img.src = initialSignature;
+      } else {
+        // Plain text signature: render in elegant cursive
+        const displayName = initialSignature.replace(/^e-signed:/i, '').trim() || signerName || 'David Miller';
         ctx.clearRect(0, 0, rect.width, rect.height);
-        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        ctx.font = 'italic 32px "Brush Script MT", "Segoe Script", "Great Vibes", cursive, sans-serif';
+        ctx.fillStyle = '#071D49';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(displayName, rect.width / 2, rect.height / 2);
         setHasDrawn(true);
         setIsSaved(true);
-      };
-      img.src = initialSignature;
+      }
     }
   }, [initialSignature]);
 
