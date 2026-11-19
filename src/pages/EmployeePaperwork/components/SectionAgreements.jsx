@@ -4,9 +4,11 @@ import DigitalSignaturePad from '../../../components/agreements/DigitalSignature
 
 export default function SectionAgreements({
   formData,
-  errors,
+  errors = {},
   onAgreementChange,
 }) {
+  const agreements = formData?.agreements || {};
+  const personal = formData?.personal || {};
   return (
     <section className="bg-white p-6 sm:p-7 rounded-3xl border border-slate-100 shadow-[0_2px_10px_rgba(7,29,73,0.03)] space-y-5">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -57,7 +59,7 @@ export default function SectionAgreements({
         <label className="flex items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
-            checked={formData.agreements.acceptedTerms}
+            checked={!!agreements.acceptedTerms}
             onChange={(e) => onAgreementChange('acceptedTerms', e.target.checked)}
             className="mt-1 w-4 h-4 text-[#075EE8] rounded-sm border-slate-300 focus:ring-[#075EE8]"
           />
@@ -79,9 +81,9 @@ export default function SectionAgreements({
 
         <DigitalSignaturePad
           title="Employee Digital Signature"
-          signerName={`${formData.personal.firstName} ${formData.personal.lastName}`.trim() || 'David Miller'}
+          signerName={`${personal.firstName || ''} ${personal.lastName || ''}`.trim() || 'David Miller'}
           role="Fleet Employee"
-          initialSignature={formData.agreements.digitalSignature}
+          initialSignature={agreements.digitalSignature}
           onSignatureChange={(sigData) => onAgreementChange('digitalSignature', sigData)}
         />
         {errors.digitalSignature && (

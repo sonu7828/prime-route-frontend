@@ -24,7 +24,7 @@ export default function SubmissionSuccessModal({
         <div>
           <h3 className="text-lg font-black text-[#0A1E42]">Paperwork Received!</h3>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-            Submission ID: <strong className="font-mono text-slate-800">{paperworkData.submissionId}</strong>
+            Submission ID: <strong className="font-mono text-slate-800">{paperworkData?.submissionId || 'PR-SUB-2026-0003'}</strong>
           </p>
           <p className="text-xs text-slate-600 mt-2 leading-relaxed">
             Your personal information, employment records, tax forms, and digital signature have been recorded. Status has been updated to <strong>Pending Review</strong>.
@@ -34,11 +34,11 @@ export default function SubmissionSuccessModal({
         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-left text-xs space-y-1.5 text-slate-600">
           <div className="flex justify-between">
             <span className="text-slate-400">Employee:</span>
-            <strong className="text-slate-700">{formData.personal.firstName} {formData.personal.lastName}</strong>
+            <strong className="text-slate-700">{formData?.personal?.firstName || 'David'} {formData?.personal?.lastName || 'Miller'}</strong>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-400">Position:</span>
-            <span className="font-medium">{formData.employment.position}</span>
+            <span className="font-medium">{formData?.employment?.position || 'Logistics Fleet Driver'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-400">Submitted At:</span>

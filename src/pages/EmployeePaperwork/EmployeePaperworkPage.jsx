@@ -177,10 +177,16 @@ export default function EmployeePaperworkPage() {
       newErrors.assignedManager = 'Assigned Manager is required';
     }
 
-    // Document validation (Gov ID and Driving License are primary compliance requirements)
+    // Document validation (Gov ID, Driving License, Tax Form, Bank Details are required)
     if (!data.documents?.governmentId) newErrors.governmentId = 'Government ID document is required';
     if (!data.documents?.drivingLicense && !data.documents?.driversLicense) {
       newErrors.drivingLicense = 'Driving License is required';
+    }
+    if (!data.documents?.taxDocuments && !data.documents?.w4Form) {
+      newErrors.taxDocuments = 'Tax Form (W-4 / W-9) is required';
+    }
+    if (!data.documents?.bankDetails && !data.documents?.directDepositVoidCheck) {
+      newErrors.bankDetails = 'Direct Deposit / Bank Details document is required';
     }
 
     setErrors(newErrors);
@@ -264,7 +270,7 @@ export default function EmployeePaperworkPage() {
     try {
       setIsReviewing(true);
       const notes = adminNotes || 'All onboarding documents verified and accepted by compliance team.';
-      const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 1, 'approve', notes);
+      const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 3, 'approve', notes);
       updatePaperwork(res || {
         status: 'Approved',
         reviewNotes: notes
@@ -282,7 +288,7 @@ export default function EmployeePaperworkPage() {
     try {
       setIsReviewing(true);
       const notes = adminNotes || 'Please re-upload a clearer copy of your Driving License with expiration date clearly legible.';
-      const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 1, 'reject', notes);
+      const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 3, 'reject', notes);
       updatePaperwork(res || {
         status: 'Rejected',
         reviewNotes: notes
@@ -299,7 +305,7 @@ export default function EmployeePaperworkPage() {
   const handleAdminReset = async () => {
     try {
       setIsReviewing(true);
-      const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 1, 'reset', '');
+      const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 3, 'reset', '');
       updatePaperwork(res || {
         status: 'Draft',
         reviewNotes: ''
@@ -369,7 +375,7 @@ export default function EmployeePaperworkPage() {
       {/* Top Paperwork Status Lifecycle Indicator */}
       <PaperworkStepper
         status={status}
-        submissionId={paperworkData?.submissionId || 'PR-SUB-2026-0001'}
+        submissionId={paperworkData?.submissionId || 'PR-SUB-2026-0003'}
         submittedAt={paperworkData?.submittedAt}
         reviewNotes={paperworkData?.reviewNotes}
       />

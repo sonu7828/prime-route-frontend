@@ -1,7 +1,8 @@
 import React from 'react';
 import { Upload, Check, FileText, Trash2 } from 'lucide-react';
 
-export default function SectionDocuments({ formData, errors, onFileUpload, onRemoveDocument }) {
+export default function SectionDocuments({ formData, errors = {}, onFileUpload, onRemoveDocument }) {
+  const documents = formData?.documents || {};
   return (
     <section className="bg-white p-6 sm:p-7 rounded-3xl border border-slate-100 shadow-[0_2px_10px_rgba(7,29,73,0.03)] space-y-5">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -32,7 +33,7 @@ export default function SectionDocuments({ formData, errors, onFileUpload, onRem
               </h4>
               <p className="text-[11px] text-slate-500 mt-0.5">Passport, State ID, or Military ID</p>
             </div>
-            {formData.documents.governmentId ? (
+            {documents.governmentId ? (
               <span className="p-1 rounded-full bg-emerald-100 text-emerald-600">
                 <Check className="w-3.5 h-3.5" />
               </span>
@@ -41,13 +42,13 @@ export default function SectionDocuments({ formData, errors, onFileUpload, onRem
             )}
           </div>
 
-          {formData.documents.governmentId ? (
+          {documents.governmentId ? (
             <div className="mt-3 p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 overflow-hidden">
                 <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                 <div className="truncate">
-                  <p className="text-xs font-bold text-slate-800 truncate">{formData.documents.governmentId.name}</p>
-                  <p className="text-[10px] text-slate-400">{formData.documents.governmentId.size}</p>
+                  <p className="text-xs font-bold text-slate-800 truncate">{documents.governmentId.name}</p>
+                  <p className="text-[10px] text-slate-400">{documents.governmentId.size}</p>
                 </div>
               </div>
               <button
@@ -86,7 +87,7 @@ export default function SectionDocuments({ formData, errors, onFileUpload, onRem
               </h4>
               <p className="text-[11px] text-slate-500 mt-0.5">Valid Commercial or Class D License</p>
             </div>
-            {formData.documents.drivingLicense ? (
+            {documents.drivingLicense ? (
               <span className="p-1 rounded-full bg-emerald-100 text-emerald-600">
                 <Check className="w-3.5 h-3.5" />
               </span>
@@ -95,13 +96,13 @@ export default function SectionDocuments({ formData, errors, onFileUpload, onRem
             )}
           </div>
 
-          {formData.documents.drivingLicense ? (
+          {documents.drivingLicense ? (
             <div className="mt-3 p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 overflow-hidden">
                 <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                 <div className="truncate">
-                  <p className="text-xs font-bold text-slate-800 truncate">{formData.documents.drivingLicense.name}</p>
-                  <p className="text-[10px] text-slate-400">{formData.documents.drivingLicense.size}</p>
+                  <p className="text-xs font-bold text-slate-800 truncate">{documents.drivingLicense.name}</p>
+                  <p className="text-[10px] text-slate-400">{documents.drivingLicense.size}</p>
                 </div>
               </div>
               <button
@@ -140,7 +141,7 @@ export default function SectionDocuments({ formData, errors, onFileUpload, onRem
               </h4>
               <p className="text-[11px] text-slate-500 mt-0.5">Signed Federal Withholding / Taxpayer ID</p>
             </div>
-            {formData.documents.taxDocuments ? (
+            {documents.taxDocuments ? (
               <span className="p-1 rounded-full bg-emerald-100 text-emerald-600">
                 <Check className="w-3.5 h-3.5" />
               </span>
@@ -149,13 +150,13 @@ export default function SectionDocuments({ formData, errors, onFileUpload, onRem
             )}
           </div>
 
-          {formData.documents.taxDocuments ? (
+          {documents.taxDocuments ? (
             <div className="mt-3 p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 overflow-hidden">
                 <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                 <div className="truncate">
-                  <p className="text-xs font-bold text-slate-800 truncate">{formData.documents.taxDocuments.name}</p>
-                  <p className="text-[10px] text-slate-400">{formData.documents.taxDocuments.size}</p>
+                  <p className="text-xs font-bold text-slate-800 truncate">{documents.taxDocuments.name}</p>
+                  <p className="text-[10px] text-slate-400">{documents.taxDocuments.size}</p>
                 </div>
               </div>
               <button
@@ -194,7 +195,7 @@ export default function SectionDocuments({ formData, errors, onFileUpload, onRem
               </h4>
               <p className="text-[11px] text-slate-500 mt-0.5">Voided Check or Bank Letter</p>
             </div>
-            {formData.documents.bankDetails ? (
+            {documents.bankDetails ? (
               <span className="p-1 rounded-full bg-emerald-100 text-emerald-600">
                 <Check className="w-3.5 h-3.5" />
               </span>
@@ -203,13 +204,13 @@ export default function SectionDocuments({ formData, errors, onFileUpload, onRem
             )}
           </div>
 
-          {formData.documents.bankDetails ? (
+          {documents.bankDetails ? (
             <div className="mt-3 p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 overflow-hidden">
                 <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                 <div className="truncate">
-                  <p className="text-xs font-bold text-slate-800 truncate">{formData.documents.bankDetails.name}</p>
-                  <p className="text-[10px] text-slate-400">{formData.documents.bankDetails.size}</p>
+                  <p className="text-xs font-bold text-slate-800 truncate">{documents.bankDetails.name}</p>
+                  <p className="text-[10px] text-slate-400">{documents.bankDetails.size}</p>
                 </div>
               </div>
               <button
@@ -246,20 +247,20 @@ export default function SectionDocuments({ formData, errors, onFileUpload, onRem
               </h4>
               <p className="text-[11px] text-slate-500 mt-0.5">DOT Medical Certificate, Forklift/Hazmat certifications, or defensive driving credentials</p>
             </div>
-            {formData.documents.otherDocuments && (
+            {documents.otherDocuments && (
               <span className="p-1 rounded-full bg-emerald-100 text-emerald-600">
                 <Check className="w-3.5 h-3.5" />
               </span>
             )}
           </div>
 
-          {formData.documents.otherDocuments ? (
+          {documents.otherDocuments ? (
             <div className="mt-3 p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 overflow-hidden">
                 <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                 <div className="truncate">
-                  <p className="text-xs font-bold text-slate-800 truncate">{formData.documents.otherDocuments.name}</p>
-                  <p className="text-[10px] text-slate-400">{formData.documents.otherDocuments.size}</p>
+                  <p className="text-xs font-bold text-slate-800 truncate">{documents.otherDocuments.name}</p>
+                  <p className="text-[10px] text-slate-400">{documents.otherDocuments.size}</p>
                 </div>
               </div>
               <button

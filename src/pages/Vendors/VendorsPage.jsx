@@ -19,7 +19,12 @@ import {
   Tag,
   Trash2,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  RotateCcw,
+  PowerOff,
+  ShieldAlert,
+  FolderOpen,
+  Info
 } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
 import Modal from '../../components/common/Modal';
@@ -81,6 +86,9 @@ export default function VendorsPage() {
 
   const loadVendorsData = async (forceRefresh = false) => {
     if (_vendorsCache && !forceRefresh) {
+      setVendors(_vendorsCache.vendors);
+      setStats(_vendorsCache.stats);
+      setAllPayables(_vendorsCache.allPayables);
       setIsLoading(false);
       return;
     }
@@ -212,13 +220,42 @@ export default function VendorsPage() {
     setIsSubmitting(true);
     try {
       const res = await vendorsApi.deleteVendor(vendor.id);
-      setNotification(res?.message || `Vendor ${vendor.name} updated.`);
+      const isDeactivated = res?.deactivated || res?.message?.includes('deactivated');
+      setNotification({
+        type: isDeactivated ? 'warning' : 'success',
+        text: res?.message || `Vendor ${vendor.name} updated.`,
+        financialRecords: res?.financialRecords
+      });
       setDeletingVendor(null);
       await loadVendorsData(true);
-      setTimeout(() => setNotification(''), 4000);
+      setTimeout(() => setNotification(null), 6000);
     } catch (err) {
       console.error('Failed to delete vendor:', err);
-      setNotification(`Error: ${err.message || 'Failed to update vendor'}`);
+      setNotification({
+        type: 'error',
+        text: `Error: ${err.message || 'Failed to update vendor'}`
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReactivateVendor = async (vendor) => {
+    setIsSubmitting(true);
+    try {
+      await vendorsApi.reactivateVendor(vendor.id);
+      setNotification({
+        type: 'success',
+        text: `Vendor ${vendor.name} (${vendor.id}) reactivated successfully to Active Partner.`
+      });
+      await loadVendorsData(true);
+      setTimeout(() => setNotification(null), 5000);
+    } catch (err) {
+      console.error('Failed to reactivate vendor:', err);
+      setNotification({
+        type: 'error',
+        text: `Error: ${err.message || 'Failed to reactivate vendor'}`
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -273,13 +310,34 @@ export default function VendorsPage() {
 
       {/* Ephemeral Feedback Toast */}
       {notification && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900 rounded-xl flex items-center justify-between shadow-2xs animate-fade-in">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>{notification}</span>
+        <div className={`p-4 border rounded-2xl flex items-start justify-between gap-3 shadow-md animate-fade-in ${
+          (typeof notification === 'object' && notification.type === 'warning')
+            ? 'bg-amber-50 border-amber-200 text-amber-950'
+            : (typeof notification === 'object' && notification.type === 'error')
+            ? 'bg-rose-50 border-rose-200 text-rose-950'
+            : 'bg-emerald-50 border-emerald-200 text-emerald-950'
+        }`}>
+          <div className="flex items-start gap-2.5">
+            {typeof notification === 'object' && notification.type === 'warning' ? (
+              <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            ) : typeof notification === 'object' && notification.type === 'error' ? (
+              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            )}
+            <div className="space-y-1">
+              <p className="text-xs font-bold leading-relaxed">
+                {typeof notification === 'object' ? notification.text : notification}
+              </p>
+              {typeof notification === 'object' && notification.type === 'warning' && (
+                <p className="text-[11px] text-amber-800 font-medium">
+                  Financial Audit Footprint: Recorded in <strong>Payments &amp; Accounting (/accounting) &gt; Payables (AP)</strong>. Ledger integrity &amp; tax compliance preserved.
+                </p>
+              )}
+            </div>
           </div>
-          <button onClick={() => setNotification('')} className="text-slate-400 hover:text-slate-600">
-            Dismiss
+          <button onClick={() => setNotification(null)} className="text-slate-400 hover:text-slate-600 p-1 text-xs font-bold cursor-pointer">
+            ✕
           </button>
         </div>
       )}
@@ -461,14 +519,57 @@ export default function VendorsPage() {
                         </td>
 
                         {/* Status */}
-                        <td className="py-3.5 px-4 text-center">
-                          <StatusBadge status={v.status || 'Active Partner'} />
+                        <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="inline-flex flex-col items-center">
+                            {v.status === 'Inactive' ? (
+                              <button
+                                type="button"
+                                onClick={() => handleReactivateVendor(v)}
+                                title="Click to Reactivate Vendor to Active Partner"
+                                className="group/badge cursor-pointer"
+                              >
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 group-hover/badge:bg-emerald-50 group-hover/badge:text-emerald-700 group-hover/badge:border-emerald-300 transition-all shadow-2xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 group-hover/badge:bg-emerald-500" />
+                                  <span className="group-hover/badge:hidden">Inactive</span>
+                                  <span className="hidden group-hover/badge:inline flex items-center gap-1">
+                                    <RotateCcw className="w-3 h-3" /> Reactivate?
+                                  </span>
+                                </span>
+                              </button>
+                            ) : (
+                              <StatusBadge status={v.status || 'Active Partner'} />
+                            )}
+                            {v.spendYTD > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedVendor(v)}
+                                className="text-[10px] text-slate-400 hover:text-[#075EE8] font-mono mt-1 hover:underline cursor-pointer flex items-center gap-1"
+                                title="Financial records located in Accounting -> Payables (AP). Click to view in Dossier."
+                              >
+                                <FolderOpen className="w-3 h-3 text-[#075EE8]" />
+                                <span>In Accounting: {formatCurrency(v.spendYTD)}</span>
+                              </button>
+                            )}
+                          </div>
                         </td>
 
                         {/* Action */}
                         <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5">
+                            {v.status === 'Inactive' && (
+                              <button
+                                type="button"
+                                onClick={() => handleReactivateVendor(v)}
+                                disabled={isSubmitting}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 hover:border-emerald-600 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+                                title="Reactivate this vendor back to Active Partner"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Reactivate</span>
+                              </button>
+                            )}
                             <button
+                              type="button"
                               onClick={() => setSelectedVendor(v)}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#075EE8]/10 hover:bg-[#075EE8] text-[#075EE8] hover:text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs"
                               title="View Vendor Dossier with Invoices, Payments & Spending History"
@@ -476,13 +577,26 @@ export default function VendorsPage() {
                               <Eye className="w-3.5 h-3.5" />
                               <span>Dossier</span>
                             </button>
-                            <button
-                              onClick={() => setDeletingVendor(v)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                              title="Deactivate / Delete Vendor"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {/* If Active, show Deactivate/Delete button; If Inactive with zero spend, allow permanent delete; If Inactive with spend, already deactivated */}
+                            {v.status !== 'Inactive' ? (
+                              <button
+                                type="button"
+                                onClick={() => setDeletingVendor(v)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Deactivate / Delete Vendor"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            ) : v.spendYTD === 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => setDeletingVendor(v)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Permanently Delete (Zero financial records)"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            ) : null}
                           </div>
                         </td>
                       </tr>
@@ -503,6 +617,9 @@ export default function VendorsPage() {
           vendor={selectedVendor}
           allExpenses={allPayables}
           allPayables={allPayables}
+          onVendorUpdated={async () => {
+            await loadVendorsData(true);
+          }}
         />
       )}
 
@@ -618,47 +735,136 @@ export default function VendorsPage() {
       </Modal>
 
       {/* Delete / Deactivate Confirmation Modal */}
-      {deletingVendor && (
-        <Modal
-          isOpen={!!deletingVendor}
-          onClose={() => setDeletingVendor(null)}
-          title="Deactivate / Delete Vendor"
-          subtitle={`Manage master record for ${deletingVendor.name}`}
-          maxWidth="max-w-md"
-        >
-          <div className="space-y-4">
-            <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-              <div className="text-xs text-rose-900 space-y-1">
-                <p className="font-bold">Confirm Vendor Status Change</p>
-                <p className="leading-relaxed">
-                  Are you sure you want to deactivate or remove <strong>{deletingVendor.name}</strong> ({deletingVendor.id})?
-                  If financial expense records exist, the vendor will be safely marked as <em>Inactive</em> to protect audit compliance.
-                </p>
+      {deletingVendor && (() => {
+        const vName = (deletingVendor.name || '').toLowerCase();
+        const matchedPayables = (allPayables || []).filter(
+          (p) =>
+            (p.vendor || '').toLowerCase() === vName ||
+            (p.vendorId && String(p.vendorId) === String(deletingVendor.rawId || deletingVendor.id)) ||
+            (p.vendor_id && String(p.vendor_id) === String(deletingVendor.rawId || deletingVendor.id))
+        );
+        const hasFinancials = Number(deletingVendor.spendYTD || 0) > 0 || matchedPayables.length > 0;
+
+        return (
+          <Modal
+            isOpen={!!deletingVendor}
+            onClose={() => setDeletingVendor(null)}
+            title={hasFinancials ? 'Deactivate Vendor (Accounting Safeguard)' : 'Permanently Delete Vendor'}
+            subtitle={`Vendor Master Record: ${deletingVendor.name} (${deletingVendor.id})`}
+            maxWidth="max-w-lg"
+          >
+            <div className="space-y-4">
+              {hasFinancials ? (
+                <>
+                  {/* Accounting Safeguard Warning */}
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
+                    <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="text-xs text-amber-950 space-y-1.5 leading-relaxed">
+                      <p className="font-bold text-sm text-amber-950">
+                        Permanent Deletion Blocked by Accounting Safeguard
+                      </p>
+                      <p>
+                        <strong>{deletingVendor.name}</strong> cannot be permanently deleted from the database because it has existing financial records recorded in the general ledger.
+                      </p>
+                      <div className="p-2.5 rounded-xl bg-amber-100/70 border border-amber-200/60 text-amber-900 font-medium">
+                        ✓ <strong>Action to be performed:</strong> This partner will be marked as <strong className="text-rose-700">Inactive</strong>. It will be disabled for future fleet operations, but all historic vouchers, invoices, and accounting records will remain safely preserved.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financial Audit Trail Footprint Box */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                        <FolderOpen className="w-4 h-4 text-[#075EE8]" />
+                        Financial Records Location
+                      </span>
+                      <span className="font-mono text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-lg border border-rose-200">
+                        Spend YTD: {formatCurrency(deletingVendor.spendYTD || 0)}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-600 space-y-1">
+                      <div className="flex items-center justify-between text-[11px] py-1 border-b border-slate-200/60">
+                        <span className="text-slate-500">Module Location:</span>
+                        <strong className="text-slate-800">Payments &amp; Accounting (/accounting) &gt; Payables (AP)</strong>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] py-1 border-b border-slate-200/60">
+                        <span className="text-slate-500">Ledger Invoices / Bills:</span>
+                        <strong className="text-slate-800">{matchedPayables.length > 0 ? `${matchedPayables.length} bills on file` : 'Recorded in Expenses Table'}</strong>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] py-1">
+                        <span className="text-slate-500">Primary Service:</span>
+                        <span className="font-semibold text-slate-700">{deletingVendor.services || deletingVendor.category}</span>
+                      </div>
+                    </div>
+
+                    {/* Quick Link to Dossier */}
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const v = deletingVendor;
+                          setDeletingVendor(null);
+                          setSelectedVendor(v);
+                        }}
+                        className="w-full py-2 px-3 rounded-xl bg-white hover:bg-blue-50 text-[#075EE8] border border-blue-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Inspect Invoices &amp; Ledger Bills in Dossier</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="text-xs text-rose-900 space-y-1">
+                    <p className="font-bold">Confirm Permanent Deletion</p>
+                    <p className="leading-relaxed">
+                      Are you sure you want to permanently remove <strong>{deletingVendor.name}</strong> ({deletingVendor.id})?
+                      This vendor has no recorded expenses or invoices in the accounting ledger and will be completely deleted from the database.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setDeletingVendor(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => handleDeleteVendor(deletingVendor)}
+                  className={`px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                    hasFinancials
+                      ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/25'
+                      : 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/25'
+                  }`}
+                >
+                  {hasFinancials ? (
+                    <>
+                      <PowerOff className="w-4 h-4" />
+                      <span>{isSubmitting ? 'Deactivating...' : 'Deactivate Vendor (Set Inactive)'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>{isSubmitting ? 'Deleting...' : 'Permanently Delete Vendor'}</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
-
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setDeletingVendor(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => handleDeleteVendor(deletingVendor)}
-                className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-600/25 transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>{isSubmitting ? 'Processing...' : 'Confirm Action'}</span>
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        );
+      })()}
     </div>
   );
 }

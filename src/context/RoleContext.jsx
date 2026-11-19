@@ -365,13 +365,15 @@ export function RoleProvider({ children }) {
     return hasPermission(currentRoleId, menuId, 'view');
   };
 
-  const updatePaperwork = (updater) => {
+  const updatePaperwork = (updater, shouldSync = false) => {
     setPaperworkData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
-      // Asynchronously persist to MySQL
-      paperworkApi.savePaperwork(next).catch((err) => {
-        console.error('Failed to sync paperwork to MySQL:', err);
-      });
+      // Asynchronously persist to MySQL only if explicitly requested
+      if (shouldSync) {
+        paperworkApi.savePaperwork(next).catch((err) => {
+          console.error('Failed to sync paperwork to MySQL:', err);
+        });
+      }
       return next;
     });
   };

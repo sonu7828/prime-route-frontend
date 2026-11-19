@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import Modal from '../../components/common/Modal';
 import { useFleet } from '../../context/FleetContext';
+import { useRole } from '../../context/RoleContext';
 import PickupVehicleDriverSection from './components/PickupVehicleDriverSection';
 import PickupTermsSection from './components/PickupTermsSection';
 
@@ -15,6 +16,8 @@ export default function VehiclePickupModal({
   onSave
 }) {
   const { vehicles, drivers, rentals, updateVehicleStatus, updateDriverVehicle, saveRental, addInspection } = useFleet();
+  const { activeRole } = useRole();
+  const currentInspector = activeRole?.fullName ? `${activeRole.fullName} (${activeRole.title || activeRole.name})` : 'Marcus Brody (Owner & Managing Director)';
 
   // Filter available vehicles only
   const availableVehicles = useMemo(() => {
@@ -283,7 +286,7 @@ export default function VehiclePickupModal({
       agreementStatus: 'Awaiting Signature',
       agreementData: {
         owner: 'PrimeRoute Fleet Operations',
-        representativeName: 'John Doe (Administrator)',
+        representativeName: currentInspector,
         renter: selectedDriver.name,
         driverName: selectedDriver.name,
         license: selectedDriver.license,
@@ -349,7 +352,7 @@ export default function VehiclePickupModal({
         tiresCondition: 'Good (Verified)',
         windshieldStatus: 'Clear / Intact',
         spareTirePresent: true,
-        inspector: 'John Doe (Admin)',
+        inspector: currentInspector,
         status: 'Passed',
         notes: `${formData.pickupRemarks} ${formData.hasExistingDamage ? `| Pre-existing Wear: ${formData.existingDamageNotes}` : ''}`,
         driverSignature: selectedDriver.name,

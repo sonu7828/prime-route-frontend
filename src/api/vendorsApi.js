@@ -74,5 +74,21 @@ export const vendorsApi = {
       method: 'DELETE'
     });
     return res.data;
+  },
+
+  async reactivateVendor(id) {
+    try {
+      const res = await request(`/vendors/${id}/reactivate`, {
+        method: 'POST'
+      });
+      return res.data || res;
+    } catch {
+      // Robust fallback to PUT /vendors/:id with status: 'active'
+      const fallback = await request(`/vendors/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'active' })
+      });
+      return fallback.data || fallback;
+    }
   }
 };
