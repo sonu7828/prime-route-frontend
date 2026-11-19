@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Modal from '../../components/common/Modal';
 import {
   UploadCloud,
@@ -11,14 +11,8 @@ import {
   AlertCircle,
   X
 } from 'lucide-react';
-import {
-  mockVehicles,
-  mockDrivers,
-  initialRentals,
-  initialExpenses,
-  initialAccidents
-} from '../../data/mockData';
 import { useRole } from '../../context/RoleContext';
+import { useFleet } from '../../context/FleetContext';
 
 const CONTROLLED_TYPES = [
   { value: 'title', label: 'Certificate of Title' },
@@ -40,13 +34,14 @@ export default function UploadDocumentModal({
   onSave
 }) {
   const { activeRole } = useRole();
+  const { vehicles, drivers, rentals, accidents } = useFleet();
   const cameraInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     name: '',
     type: 'registration',
     recordCategory: 'Vehicle',
-    selectedRecordId: mockVehicles[0]?.id || 'VEH-001',
+    selectedRecordId: vehicles?.[0]?.id || 'VEH-001',
     expiryDate: '2026-07-31',
     isPermanent: false,
     version: 'v1.0',
@@ -121,43 +116,34 @@ export default function UploadDocumentModal({
   const getLinkedRecordInfo = () => {
     const { recordCategory, selectedRecordId } = formData;
     if (recordCategory === 'Vehicle') {
-      const v = mockVehicles.find((item) => item.id === selectedRecordId) || mockVehicles[0];
+      const v = (vehicles || []).find((item) => item.id === selectedRecordId || item.plate === selectedRecordId) || vehicles?.[0];
       return {
         type: 'vehicle',
         id: v?.id || 'VEH-001',
-        name: `${v?.name || 'Vehicle'} (${v?.plate || ''})`,
-        formatted: `Vehicle: ${v?.name || 'Vehicle'} (${v?.plate || ''})`
+        name: `${v?.name || `${v?.make || ''} ${v?.model || ''}`.trim() || 'Vehicle'} (${v?.plate || 'PR-FLEET'})`,
+        formatted: `Vehicle: ${v?.name || `${v?.make || ''} ${v?.model || ''}`.trim() || 'Vehicle'} (${v?.plate || 'PR-FLEET'})`
       };
     }
     if (recordCategory === 'Driver') {
-      const d = mockDrivers.find((item) => item.id === selectedRecordId) || mockDrivers[0];
+      const d = (drivers || []).find((item) => item.id === selectedRecordId || item.name === selectedRecordId) || drivers?.[0];
       return {
         type: 'driver',
         id: d?.id || 'DRV-101',
-        name: d?.name || 'Driver',
-        formatted: `Driver: ${d?.name || 'Driver'} (${d?.id || ''})`
+        name: d?.name || `${d?.first_name || ''} ${d?.last_name || ''}`.trim() || 'Driver',
+        formatted: `Driver: ${d?.name || `${d?.first_name || ''} ${d?.last_name || ''}`.trim() || 'Driver'} (${d?.id || ''})`
       };
     }
     if (recordCategory === 'Contract') {
-      const r = initialRentals.find((item) => item.id === selectedRecordId) || initialRentals[0];
+      const r = (rentals || []).find((item) => item.id === selectedRecordId || item.contractNumber === selectedRecordId) || rentals?.[0];
       return {
         type: 'contract',
-        id: r?.id || 'RNT-2025-001',
-        name: `Contract ${r?.id} (${r?.customer || r?.driver || 'Customer'})`,
-        formatted: `Contract: ${r?.id} (${r?.customer || r?.driver || 'Customer'})`
-      };
-    }
-    if (recordCategory === 'Expense') {
-      const exp = initialExpenses.find((item) => item.id === selectedRecordId) || initialExpenses[0];
-      return {
-        type: 'expense',
-        id: exp?.id || 'EXP-001',
-        name: `Expense ${exp?.id} (${exp?.vendor || 'Vendor'})`,
-        formatted: `Expense: ${exp?.id || 'EXP'} – ${exp?.vendor || 'Vendor'}`
+        id: r?.id || r?.contractNumber || 'RNT-2025-001',
+        name: `Contract ${r?.contractNumber || r?.id} (${r?.customer || r?.driver || 'Customer'})`,
+        formatted: `Contract: ${r?.contractNumber || r?.id} (${r?.customer || r?.driver || 'Customer'})`
       };
     }
     if (recordCategory === 'Claim') {
-      const acc = initialAccidents.find((item) => item.id === selectedRecordId) || initialAccidents[0];
+      const acc = (accidents || []).find((item) => item.id === selectedRecordId || item.claimNumber === selectedRecordId) || accidents?.[0];
       return {
         type: 'claim',
         id: acc?.claimNumber || acc?.id || 'CLM-001',
@@ -379,11 +365,10 @@ export default function UploadDocumentModal({
                   onChange={(e) => {
                     const cat = e.target.value;
                     let defaultId = 'GEN-FLEET';
-                    if (cat === 'Vehicle') defaultId = mockVehicles[0]?.id || 'VEH-001';
-                    if (cat === 'Driver') defaultId = mockDrivers[0]?.id || 'DRV-101';
-                    if (cat === 'Contract') defaultId = initialRentals[0]?.id || 'RNT-2025-001';
-                    if (cat === 'Expense') defaultId = initialExpenses[0]?.id || 'EXP-001';
-                    if (cat === 'Claim') defaultId = initialAccidents[0]?.claimNumber || 'CLM-001';
+                    if (cat === 'Vehicle') defaultId = vehicles?.[0]?.id || 'VEH-001';
+                    if (cat === 'Driver') defaultId = drivers?.[0]?.id || 'DRV-101';
+                    if (cat === 'Contract') defaultId = rentals?.[0]?.id || rentals?.[0]?.contractNumber || 'RNT-2025-001';
+                    if (cat === 'Claim') defaultId = accidents?.[0]?.claimNumber || accidents?.[0]?.id || 'CLM-001';
 
                     setFormData((p) => ({
                       ...p,
@@ -396,7 +381,6 @@ export default function UploadDocumentModal({
                   <option value="Vehicle">🚗 Vehicle</option>
                   <option value="Driver">👤 Driver</option>
                   <option value="Contract">🔑 Rental / Lease Contract</option>
-                  <option value="Expense">💳 Expense / Vendor Payment</option>
                   <option value="Claim">🛡️ Accident &amp; Insurance Claim</option>
                   <option value="General">🏢 General Fleet / Facility</option>
                 </select>
@@ -412,31 +396,25 @@ export default function UploadDocumentModal({
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-medium"
                 >
                   {formData.recordCategory === 'Vehicle' &&
-                    mockVehicles.map((v) => (
+                    (vehicles || []).map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.name} ({v.plate})
+                        {v.name || `${v.make || ''} ${v.model || ''}`.trim()} ({v.plate})
                       </option>
                     ))}
                   {formData.recordCategory === 'Driver' &&
-                    mockDrivers.map((d) => (
+                    (drivers || []).map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.name} ({d.id})
+                        {d.name || `${d.first_name || ''} ${d.last_name || ''}`.trim()} ({d.id})
                       </option>
                     ))}
                   {formData.recordCategory === 'Contract' &&
-                    initialRentals.map((r) => (
+                    (rentals || []).map((r) => (
                       <option key={r.id} value={r.id}>
-                        {r.id} – {r.customer || r.driver}
-                      </option>
-                    ))}
-                  {formData.recordCategory === 'Expense' &&
-                    initialExpenses.map((exp) => (
-                      <option key={exp.id} value={exp.id}>
-                        {exp.id} – {exp.vendor} (${exp.amount})
+                        {r.contractNumber || r.id} – {r.customer || r.driver}
                       </option>
                     ))}
                   {formData.recordCategory === 'Claim' &&
-                    initialAccidents.map((acc) => (
+                    (accidents || []).map((acc) => (
                       <option key={acc.id} value={acc.claimNumber || acc.id}>
                         {acc.claimNumber || acc.id} – {acc.vehicle}
                       </option>

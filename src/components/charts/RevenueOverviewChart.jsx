@@ -9,12 +9,32 @@ import {
   Tooltip,
 } from 'recharts';
 import { TrendingUp } from 'lucide-react';
-import { revenueOverviewData } from '../../data/mockData';
 import { formatCurrency } from '../../utils/formatters';
+
+const defaultRevenueOverview = {
+  'This Month': [
+    { name: 'Week 1', revenue: 0, expenses: 0 },
+    { name: 'Week 2', revenue: 0, expenses: 0 },
+    { name: 'Week 3', revenue: 0, expenses: 0 },
+    { name: 'Week 4', revenue: 0, expenses: 0 },
+  ],
+  'Last Month': [
+    { name: 'Week 1', revenue: 0, expenses: 0 },
+    { name: 'Week 2', revenue: 0, expenses: 0 },
+    { name: 'Week 3', revenue: 0, expenses: 0 },
+    { name: 'Week 4', revenue: 0, expenses: 0 },
+  ],
+  'This Year': [
+    { name: 'Q1', revenue: 0, expenses: 0 },
+    { name: 'Q2', revenue: 0, expenses: 0 },
+    { name: 'Q3', revenue: 0, expenses: 0 },
+    { name: 'Q4', revenue: 0, expenses: 0 },
+  ],
+};
 
 export default function RevenueOverviewChart({ data: propData }) {
   const [timeframe, setTimeframe] = useState('This Month');
-  const sourceData = propData || revenueOverviewData;
+  const sourceData = propData || defaultRevenueOverview;
   const data = sourceData[timeframe] || sourceData['This Month'] || [];
 
   const CustomTooltip = ({ active, payload, label }) => {

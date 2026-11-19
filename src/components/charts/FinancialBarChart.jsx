@@ -8,12 +8,25 @@ import {
   Tooltip,
 } from 'recharts';
 import { TrendingUp, ArrowUpRight } from 'lucide-react';
-import { financialSummaryData } from '../../data/mockData';
 import { formatCurrency } from '../../utils/formatters';
 
+const defaultFinancialSummary = {
+  monthlyBars: [
+    { month: 'Jun', revenue: 0, expenses: 0 },
+    { month: 'Jul', revenue: 0, expenses: 0 },
+    { month: 'Aug', revenue: 0, expenses: 0 },
+    { month: 'Sep', revenue: 0, expenses: 0 },
+    { month: 'Oct', revenue: 0, expenses: 0 },
+    { month: 'Nov', revenue: 0, expenses: 0 },
+  ],
+  totalRevenue: 0,
+  totalExpenses: 0,
+  netProfit: 0,
+};
+
 export default function FinancialBarChart({ data: propData }) {
-  const summary = propData || financialSummaryData;
-  const bars = summary.monthlyBars || financialSummaryData.monthlyBars;
+  const summary = propData || defaultFinancialSummary;
+  const bars = summary.monthlyBars || defaultFinancialSummary.monthlyBars;
 
   return (
     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(7,29,73,0.04)] h-full flex flex-col justify-between">

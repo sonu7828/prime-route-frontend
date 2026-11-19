@@ -1,5 +1,4 @@
 import { delay, getCachedOrInit, setCached, ApiError } from './client';
-import { initialIncome, initialInvoices } from '../data/mockData';
 
 const INCOME_CACHE = 'prime_route_payments';
 const INVOICES_CACHE = 'prime_route_invoices';
@@ -7,17 +6,17 @@ const INVOICES_CACHE = 'prime_route_invoices';
 export const paymentsApi = {
   async getPayments() {
     await delay();
-    return [...getCachedOrInit(INCOME_CACHE, () => [...initialIncome])];
+    return [...getCachedOrInit(INCOME_CACHE, () => [])];
   },
 
   async getInvoices() {
     await delay();
-    return [...getCachedOrInit(INVOICES_CACHE, () => [...initialInvoices])];
+    return [...getCachedOrInit(INVOICES_CACHE, () => [])];
   },
 
   async recordPayment(paymentData) {
     await delay();
-    const payments = getCachedOrInit(INCOME_CACHE, () => [...initialIncome]);
+    const payments = getCachedOrInit(INCOME_CACHE, () => []);
 
     const newPayment = {
       id: paymentData.id || `PAY-${Date.now()}`,
@@ -33,7 +32,7 @@ export const paymentsApi = {
 
   async createInvoice(invoiceData) {
     await delay();
-    const invoices = getCachedOrInit(INVOICES_CACHE, () => [...initialInvoices]);
+    const invoices = getCachedOrInit(INVOICES_CACHE, () => []);
 
     const newInvoice = {
       id: invoiceData.id || `INV-${String(invoices.length + 101).padStart(4, '0')}`,
