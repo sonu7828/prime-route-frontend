@@ -949,6 +949,28 @@ export default function StatusesAndCategoriesTab() {
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl"
               />
             </div>
+
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(editingItem.data.canRent)}
+                  onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, canRent: e.target.checked } }))}
+                  className="rounded text-[#075EE8]"
+                />
+                <span>Vehicles in this status can be rented (Rental Eligible: Yes)</span>
+              </label>
+
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(editingItem.data.canIntake)}
+                  onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, canIntake: e.target.checked } }))}
+                  className="rounded text-[#075EE8]"
+                />
+                <span>Allowed in intake staging queue (Intake Ready: Allowed)</span>
+              </label>
+            </div>
             <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
               <button
                 type="button"
@@ -988,6 +1010,28 @@ export default function StatusesAndCategoriesTab() {
                 onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, code: e.target.value } }))}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl font-mono uppercase"
               />
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(editingItem.data.taxDeductible)}
+                  onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, taxDeductible: e.target.checked } }))}
+                  className="rounded text-[#075EE8]"
+                />
+                <span>Tax Deductible Fleet Expense</span>
+              </label>
+
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(editingItem.data.requiresApproval)}
+                  onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, requiresApproval: e.target.checked } }))}
+                  className="rounded text-[#075EE8]"
+                />
+                <span>Managerial Approval Required before payout</span>
+              </label>
             </div>
             <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
               <button
@@ -1043,6 +1087,18 @@ export default function StatusesAndCategoriesTab() {
                 onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, description: e.target.value } }))}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl"
               />
+            </div>
+
+            <div className="pt-2 border-t border-slate-100">
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(editingItem.data.chargeable)}
+                  onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, chargeable: e.target.checked } }))}
+                  className="rounded text-[#075EE8]"
+                />
+                <span>Can charge driver balance in this state (Driver Chargeable: Eligible)</span>
+              </label>
             </div>
             <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
               <button
