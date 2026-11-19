@@ -14,7 +14,9 @@ import {
   ExternalLink,
   Receipt,
   Download,
-  AlertCircle
+  AlertCircle,
+  RotateCcw,
+  ShieldCheck
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -31,16 +33,36 @@ import Modal from '../../../components/common/Modal';
 import StatusBadge from '../../../components/common/StatusBadge';
 import { formatCurrency, formatDate, getCurrencySymbol } from '../../../utils/formatters';
 import { exportToCsv } from '../../../utils/exportCsv';
+import { vendorsApi } from '../../../api/vendorsApi';
 
 export default function VendorDetailsModal({
   isOpen,
   onClose,
   vendor,
   allExpenses = [],
-  allPayables = []
+  allPayables = [],
+  onVendorUpdated
 }) {
   const [activeTab, setActiveTab] = useState('invoices'); // 'invoices' | 'payments' | 'spending'
   const [statusFilter, setStatusFilter] = useState('All');
+  const [localStatus, setLocalStatus] = useState(vendor?.status || 'Active Partner');
+  const [isReactivating, setIsReactivating] = useState(false);
+
+  const handleReactivateFromDossier = async () => {
+    if (!vendor) return;
+    try {
+      setIsReactivating(true);
+      await vendorsApi.reactivateVendor(vendor.id);
+      setLocalStatus('Active Partner');
+      if (onVendorUpdated) {
+        onVendorUpdated({ ...vendor, status: 'Active Partner' });
+      }
+    } catch (err) {
+      console.error('Failed to reactivate from dossier:', err);
+    } finally {
+      setIsReactivating(false);
+    }
+  };
 
   // Tab 1: Invoices / Bills for this vendor
   const vendorInvoices = useMemo(() => {
@@ -175,9 +197,27 @@ export default function VendorDetailsModal({
                 <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-200 border border-blue-400/30">
                   {vendor.id}
                 </span>
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                  {vendor.status || 'Active Partner'}
-                </span>
+                {localStatus === 'Inactive' ? (
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-500/30 text-rose-300 border border-rose-400/40">
+                    Inactive Partner
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                    Active Partner
+                  </span>
+                )}
+                {localStatus === 'Inactive' && (
+                  <button
+                    type="button"
+                    onClick={handleReactivateFromDossier}
+                    disabled={isReactivating}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md transition-all cursor-pointer active:scale-95"
+                    title="Reactivate Vendor to Active Partner"
+                  >
+                    <RotateCcw className={`w-3.5 h-3.5 ${isReactivating ? 'animate-spin' : ''}`} />
+                    <span>{isReactivating ? 'Reactivating...' : 'Reactivate Partner'}</span>
+                  </button>
+                )}
               </div>
               <h3 className="text-lg font-black tracking-tight text-white mt-1">{vendor.name}</h3>
               <p className="text-xs text-blue-200">{vendor.services || 'General Fleet Service Provider'}</p>
@@ -207,6 +247,20 @@ export default function VendorDetailsModal({
               <span className="truncate">{vendor.address || 'Address on file'}</span>
             </div>
           </div>
+        </div>
+
+        {/* Financial Records Audit Trail Location Banner */}
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-slate-700">
+            <Receipt className="w-4 h-4 text-[#075EE8] shrink-0" />
+            <span>
+              <strong>Financial Audit Location:</strong> All bills and disbursements are recorded in{' '}
+              <strong className="text-[#075EE8]">Payments &amp; Accounting (/accounting)</strong> under the <strong>Payables (AP)</strong> subledger.
+            </span>
+          </div>
+          <span className="font-mono text-xs font-bold text-slate-600 bg-white px-2.5 py-1 rounded-xl border border-slate-200 shrink-0">
+            {vendorInvoices.length} Bills Linked
+          </span>
         </div>
 
         {/* 3 Requirement Tabs: Invoices, Payments, Spending History */}

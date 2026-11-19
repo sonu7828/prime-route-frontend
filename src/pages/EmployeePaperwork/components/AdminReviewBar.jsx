@@ -23,7 +23,7 @@ export default function AdminReviewBar({ roleName, activeRoleName, onApprove, on
         <button
           type="button"
           onClick={onApprove}
-          className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+          className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
         >
           <CheckCircle2 className="w-3.5 h-3.5" />
           Approve Paperwork
@@ -32,7 +32,7 @@ export default function AdminReviewBar({ roleName, activeRoleName, onApprove, on
         <button
           type="button"
           onClick={onReject}
-          className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+          className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
         >
           <XCircle className="w-3.5 h-3.5" />
           Request Revisions
@@ -41,7 +41,7 @@ export default function AdminReviewBar({ roleName, activeRoleName, onApprove, on
         <button
           type="button"
           onClick={onReset}
-          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center gap-1.5"
+          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Reset

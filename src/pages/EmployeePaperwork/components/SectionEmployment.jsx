@@ -1,7 +1,9 @@
 import React from 'react';
 import { Briefcase } from 'lucide-react';
 
-export default function SectionEmployment({ formData, errors, onEmploymentChange }) {
+export default function SectionEmployment({ formData, errors = {}, onEmploymentChange }) {
+  const employment = formData?.employment || {};
+  const currentManager = employment.assignedManager || 'Elena Vance';
   return (
     <section className="bg-white p-6 sm:p-7 rounded-3xl border border-slate-100 shadow-[0_2px_10px_rgba(7,29,73,0.03)] space-y-5">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -29,7 +31,7 @@ export default function SectionEmployment({ formData, errors, onEmploymentChange
           <input
             type="text"
             readOnly
-            value={formData.employment.employeeId}
+            value={employment.employeeId || 'PR-EMP-2026'}
             className="w-full px-3.5 py-2.5 rounded-xl text-xs border border-slate-200 bg-slate-50 font-mono font-bold text-slate-700 cursor-not-allowed"
           />
           <p className="text-[10px] text-slate-400 mt-1">Permanent PrimeRoute personnel ID</p>
@@ -41,7 +43,7 @@ export default function SectionEmployment({ formData, errors, onEmploymentChange
             Job Position <span className="text-rose-500">*</span>
           </label>
           <select
-            value={formData.employment.position}
+            value={employment.position || 'Logistics Fleet Driver'}
             onChange={(e) => onEmploymentChange('position', e.target.value)}
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.position ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
@@ -62,7 +64,7 @@ export default function SectionEmployment({ formData, errors, onEmploymentChange
             Department <span className="text-rose-500">*</span>
           </label>
           <select
-            value={formData.employment.department}
+            value={employment.department || 'Fleet Operations'}
             onChange={(e) => onEmploymentChange('department', e.target.value)}
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.department ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
@@ -83,7 +85,7 @@ export default function SectionEmployment({ formData, errors, onEmploymentChange
             Employment Type <span className="text-rose-500">*</span>
           </label>
           <select
-            value={formData.employment.employmentType}
+            value={employment.employmentType || 'Full-Time'}
             onChange={(e) => onEmploymentChange('employmentType', e.target.value)}
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.employmentType ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
@@ -104,12 +106,13 @@ export default function SectionEmployment({ formData, errors, onEmploymentChange
           </label>
           <input
             type="date"
-            value={formData.employment.joiningDate}
+            value={employment.joiningDate || ''}
             onChange={(e) => onEmploymentChange('joiningDate', e.target.value)}
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.joiningDate ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
-          />
+          >
+          </input>
           {errors.joiningDate && <p className="text-[11px] text-rose-500 mt-1">{errors.joiningDate}</p>}
         </div>
 
@@ -119,15 +122,20 @@ export default function SectionEmployment({ formData, errors, onEmploymentChange
             Assigned Manager / Supervisor <span className="text-rose-500">*</span>
           </label>
           <select
-            value={formData.employment.assignedManager}
+            value={currentManager}
             onChange={(e) => onEmploymentChange('assignedManager', e.target.value)}
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.assignedManager ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
           >
+            <option value="Elena Vance">Elena Vance (Operations Director)</option>
+            <option value="Marcus Brody">Marcus Brody (Owner & Managing Director)</option>
             <option value="Marcus Vance">Marcus Vance (Fleet Operations Lead)</option>
             <option value="Sarah Jenkins">Sarah Jenkins (Safety & Compliance)</option>
             <option value="John Doe">John Doe (Managing Director)</option>
+            {currentManager && !['Elena Vance', 'Marcus Brody', 'Marcus Vance', 'Sarah Jenkins', 'John Doe'].includes(currentManager) && (
+              <option value={currentManager}>{currentManager}</option>
+            )}
           </select>
           {errors.assignedManager && <p className="text-[11px] text-rose-500 mt-1">{errors.assignedManager}</p>}
         </div>
