@@ -173,13 +173,24 @@ export default function App() {
     }
   });
 
-  const handleLogin = (roleId) => {
-    if (roleId) {
+  const handleLogin = (userOrRole) => {
+    if (userOrRole) {
+      const roleId = typeof userOrRole === 'object' ? userOrRole.role : userOrRole;
       const validRoles = ['owner', 'secondary_admin', 'finance', 'fleet_maintenance', 'rental_operations', 'readonly_manager'];
       const normalized = roleId === 'admin' ? 'owner' : roleId === 'manager' ? 'rental_operations' : roleId === 'employee' ? 'fleet_maintenance' : roleId;
       if (validRoles.includes(normalized)) {
         try {
           localStorage.setItem('primeroute_active_role', normalized);
+        } catch {
+          // ignore
+        }
+      }
+      if (typeof userOrRole === 'object') {
+        try {
+          localStorage.setItem('primeroute_current_user', JSON.stringify(userOrRole));
+          if (userOrRole.id) {
+            localStorage.setItem('primeroute_active_user_id', String(userOrRole.id));
+          }
         } catch {
           // ignore
         }
@@ -194,6 +205,8 @@ export default function App() {
       localStorage.removeItem('primeroute_refresh_token');
       localStorage.removeItem('primeroute_current_user');
       localStorage.removeItem('primeroute_active_role');
+      localStorage.removeItem('primeroute_active_user_id');
+      localStorage.removeItem('primeroute_permissions');
     } catch {
       // ignore
     }

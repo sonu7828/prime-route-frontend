@@ -205,13 +205,89 @@ const SENSITIVE_ACTIONS_SECONDARY_ADMIN = [
   { module: 'rentals', action: 'archive' },
 ];
 
+export const MODULE_MAP = {
+  dashboard: 'Dashboard',
+  'employee-paperwork': 'Employee Paperwork',
+  vehicles: 'Vehicles',
+  drivers: 'Drivers',
+  rentals: 'Rentals',
+  inspections: 'Inspections',
+  insurance: 'Insurance & Compliance',
+  accounting: 'Accounting',
+  vendors: 'Vendors',
+  maintenance: 'Maintenance',
+  'tolls-tickets': 'Tolls & Tickets',
+  documents: 'Documents',
+  reports: 'Reports',
+  users: 'Users & Roles',
+  settings: 'Settings'
+};
+
 /**
- * Check if a role has permission for a specific module and action
+ * Check if a role/user has permission for a specific module and action
  */
 export function hasPermission(roleId, module, action = 'view') {
-  if (!roleId || !module) return false;
-  const normalizedRole = roleId.toLowerCase();
-  const rolePermissions = PERMISSIONS_MATRIX[normalizedRole];
+  if (!module) return false;
+
+  let activeRole = (roleId || '').toLowerCase();
+  let activeUserId = null;
+  try {
+    const storedUser = localStorage.getItem('primeroute_current_user');
+    if (storedUser) {
+      const u = JSON.parse(storedUser);
+      if (u.id) activeUserId = String(u.id);
+      if (u.role) activeRole = u.role.toLowerCase();
+    }
+  } catch {
+    // ignore
+  }
+
+  if (!activeUserId) {
+    activeUserId = localStorage.getItem('primeroute_active_user_id');
+  }
+
+  // Owner always has full access
+  if (activeRole === 'owner') return true;
+
+  // 1. Check dynamic granular permissions from active cache
+  try {
+    const userPermsStr =
+      (activeUserId ? localStorage.getItem(`primeroute_user_permissions_${activeUserId}`) : null) ||
+      localStorage.getItem('primeroute_permissions');
+
+    if (userPermsStr) {
+      const perms = JSON.parse(userPermsStr);
+      if (Array.isArray(perms) && perms.length > 0) {
+        const mappedName = MODULE_MAP[module.toLowerCase()] || module;
+        const perm = perms.find(
+          (p) =>
+            (p.moduleName || p.module)?.toLowerCase() === mappedName.toLowerCase() ||
+            (p.moduleName || p.module)?.toLowerCase() === module.toLowerCase()
+        );
+
+        if (perm) {
+          const act = action.toLowerCase();
+          if (act === 'view') return Boolean(perm.canView ?? perm.can_view);
+          if (act === 'add') return Boolean(perm.canAdd ?? perm.can_add);
+          if (act === 'edit') return Boolean(perm.canEdit ?? perm.can_edit);
+          if (act === 'delete') return Boolean(perm.canDelete ?? perm.can_delete);
+        } else {
+          // If granular permissions exist for this user but this module is not in them, deny access
+          return false;
+        }
+      }
+    }
+  } catch (err) {
+    // fallback if JSON parse fails
+  }
+
+  // If user has a granular permissions record saved, NEVER fall back to generic role matrix
+  if (activeUserId && localStorage.getItem(`primeroute_user_permissions_${activeUserId}`)) {
+    return false;
+  }
+
+  // 2. Fallback to static PERMISSIONS_MATRIX only for unconfigured/legacy users
+  const rolePermissions = PERMISSIONS_MATRIX[activeRole];
   if (!rolePermissions) return false;
 
   const modulePermissions = rolePermissions[module];

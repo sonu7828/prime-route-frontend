@@ -78,6 +78,19 @@ export default function Sidebar({
     { id: 'categories', label: 'Statuses & Categories', icon: Tags },
   ];
 
+  const visibleSettingsSubItems = settingsSubItems.filter((sub) => {
+    if (currentRoleId === 'owner') return true;
+    try {
+      const permsStr = localStorage.getItem('primeroute_permissions') || localStorage.getItem('permissions');
+      if (permsStr) {
+        const perms = JSON.parse(permsStr);
+        const perm = perms.find((p) => (p.moduleName || p.module) === `Settings - ${sub.label}`);
+        if (perm) return Boolean(perm.canView ?? perm.can_view);
+      }
+    } catch {}
+    return true;
+  });
+
 
 
   const handleMenuClick = (itemId) => {
@@ -203,7 +216,7 @@ export default function Sidebar({
                     {/* Settings Dropdown Submenu */}
                     {isSettingsOpen && !isCollapsed && (
                       <div className="ml-2 pl-2 border-l-2 border-[#133A85] space-y-0.5 pt-0.5 pb-0.5 animate-fade-in">
-                        {settingsSubItems.map((sub) => {
+                        {visibleSettingsSubItems.map((sub) => {
                           const SubIcon = sub.icon;
                           const isSubActive =
                             isActive &&

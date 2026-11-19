@@ -144,6 +144,25 @@ export const authenticate = async (email, password) => {
     if (user) {
       localStorage.setItem('primeroute_current_user', JSON.stringify(user));
       localStorage.setItem('primeroute_active_role', user.role);
+      localStorage.setItem('primeroute_active_user_id', String(user.id));
+
+      // Immediately fetch and cache permissions for this logged-in user
+      try {
+        const permsRes = await fetch(`${API_BASE_URL}/users/${user.id}/permissions`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+          }
+        });
+        const permsJson = await permsRes.json().catch(() => ({}));
+        const permissions = permsJson?.data?.permissions;
+        if (Array.isArray(permissions) && permissions.length > 0) {
+          localStorage.setItem(`primeroute_user_permissions_${user.id}`, JSON.stringify(permissions));
+          localStorage.setItem('primeroute_permissions', JSON.stringify(permissions));
+        }
+      } catch (e) {
+        console.warn('Pre-fetch permissions notice:', e.message);
+      }
     }
 
     return user;

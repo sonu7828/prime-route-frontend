@@ -10,7 +10,7 @@ export default function ProfileDropdown({
   onOpenProfile,
   onOpenRoleSwitcher
 }) {
-  const { currentRoleId, activeRole, returnToAdmin } = useRole();
+  const { currentRoleId, activeRole, currentUser, returnToAdmin } = useRole();
 
   if (!isOpen) return null;
 
@@ -20,8 +20,8 @@ export default function ProfileDropdown({
       <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-dropdown border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
         {/* Dynamic User Profile Header */}
         <div className="px-4 py-3 bg-[#F8FAFC] border-b border-slate-100">
-          <p className="text-xs font-bold text-[#0A1E42]">{activeRole.fullName}</p>
-          <p className="text-[11px] text-slate-500">{activeRole.email}</p>
+          <p className="text-xs font-bold text-[#0A1E42]">{currentUser?.name || currentUser?.fullName || activeRole.fullName}</p>
+          <p className="text-[11px] text-slate-500">{currentUser?.email || activeRole.email}</p>
           <div className="mt-1 flex items-center gap-1.5 text-[10px] font-semibold">
             <span className={`w-1.5 h-1.5 rounded-full ${
               currentRoleId === 'owner' ? 'bg-purple-500' : currentRoleId === 'secondary_admin' ? 'bg-blue-500' : currentRoleId === 'finance' ? 'bg-emerald-500' : 'bg-slate-400'

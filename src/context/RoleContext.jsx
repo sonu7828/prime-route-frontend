@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { ROLES_CONFIG, hasPermission } from '../auth/permissions';
 import { paperworkApi } from '../api/paperworkApi';
+import { permissionsApi } from '../api/permissionsApi';
 
 export const ROLES = {
   OWNER: {
@@ -138,8 +139,22 @@ export const ROLES = {
 const RoleContext = createContext(null);
 
 export function RoleProvider({ children }) {
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('primeroute_current_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [currentRoleId, setCurrentRoleId] = useState(() => {
     try {
+      const savedUser = localStorage.getItem('primeroute_current_user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u?.role) return u.role.toLowerCase();
+      }
       const saved = localStorage.getItem('primeroute_active_role');
       if (!saved) return 'owner';
       // Normalize legacy role IDs
@@ -151,7 +166,6 @@ export function RoleProvider({ children }) {
       if (validRoles.includes(saved.toLowerCase())) {
         return saved.toLowerCase();
       }
-      // If stored role is invalid, clear stale storage and fallback safely
       localStorage.removeItem('primeroute_active_role');
     } catch {
       // ignore
@@ -243,13 +257,23 @@ export function RoleProvider({ children }) {
     }
   }, [paperworkData]);
 
-  // Resolve current active role object
+  // Resolve current active role object, dynamically enriched with logged-in user profile
   const activeRole = useMemo(() => {
     const key = Object.keys(ROLES).find(
       (k) => ROLES[k].id === currentRoleId
     );
-    return key ? ROLES[key] : ROLES.OWNER;
-  }, [currentRoleId]);
+    const baseRole = key ? ROLES[key] : ROLES.OWNER;
+    if (currentUser) {
+      return {
+        ...baseRole,
+        fullName: currentUser.name || currentUser.fullName || baseRole.fullName,
+        email: currentUser.email || baseRole.email,
+        title: currentUser.title || currentUser.department || baseRole.title,
+        avatar: currentUser.avatar || baseRole.avatar
+      };
+    }
+    return baseRole;
+  }, [currentRoleId, currentUser]);
 
   const switchRole = (roleId) => {
     const match = Object.values(ROLES).find((r) => r.id === roleId?.toLowerCase());
@@ -261,7 +285,83 @@ export function RoleProvider({ children }) {
     setCurrentRoleId('owner');
   };
 
+  // Synchronize current user session and live permissions
+  useEffect(() => {
+    let isMounted = true;
+    const syncUserSession = async () => {
+      try {
+        const stored = localStorage.getItem('primeroute_current_user');
+        if (stored) {
+          const userObj = JSON.parse(stored);
+          if (isMounted) setCurrentUser(userObj);
+          if (userObj.id) {
+            localStorage.setItem('primeroute_active_user_id', String(userObj.id));
+            const perms = await permissionsApi.getUserPermissions(userObj.id).catch(() => null);
+            if (perms && Array.isArray(perms) && perms.length > 0) {
+              localStorage.setItem(`primeroute_user_permissions_${userObj.id}`, JSON.stringify(perms));
+              localStorage.setItem('primeroute_permissions', JSON.stringify(perms));
+              if (isMounted) setPermissionsVersion((v) => v + 1);
+            }
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    syncUserSession();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentRoleId]);
+
+  const [permissionsVersion, setPermissionsVersion] = useState(0);
+
+  // Real-time permission sync listeners
+  useEffect(() => {
+    let isMounted = true;
+    const handlePermissionsUpdated = async () => {
+      try {
+        const stored = localStorage.getItem('primeroute_current_user');
+        if (stored) {
+          const userObj = JSON.parse(stored);
+          if (userObj.id) {
+            const perms = await permissionsApi.getUserPermissions(userObj.id).catch(() => null);
+            if (isMounted && perms && Array.isArray(perms) && perms.length > 0) {
+              localStorage.setItem(`primeroute_user_permissions_${userObj.id}`, JSON.stringify(perms));
+              localStorage.setItem('primeroute_permissions', JSON.stringify(perms));
+              setPermissionsVersion((v) => v + 1);
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+      if (isMounted) {
+        setPermissionsVersion((v) => v + 1);
+      }
+    };
+
+    window.addEventListener('permissions_updated', handlePermissionsUpdated);
+    window.addEventListener('storage', handlePermissionsUpdated);
+    window.addEventListener('focus', handlePermissionsUpdated);
+
+    // Periodic check every 5 seconds so incognito/separate browser sessions sync automatically
+    const interval = setInterval(handlePermissionsUpdated, 5000);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('permissions_updated', handlePermissionsUpdated);
+      window.removeEventListener('storage', handlePermissionsUpdated);
+      window.removeEventListener('focus', handlePermissionsUpdated);
+      clearInterval(interval);
+    };
+  }, []);
+
   const isMenuAllowed = (menuId) => {
+    // Reading permissionsVersion ensures React re-evaluates isMenuAllowed whenever permissionsVersion changes!
+    void permissionsVersion;
     return hasPermission(currentRoleId, menuId, 'view');
   };
 
@@ -279,6 +379,7 @@ export function RoleProvider({ children }) {
   return (
     <RoleContext.Provider
       value={{
+        currentUser,
         currentRoleId,
         activeRole,
         switchRole,
