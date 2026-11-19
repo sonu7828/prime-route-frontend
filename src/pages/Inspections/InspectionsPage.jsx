@@ -285,10 +285,12 @@ export default function InspectionsPage() {
   // Handlers
   const handleSaveInspection = async (inspectionData) => {
     try {
-      if (editingInspection && editingInspection.id && !String(editingInspection.id).startsWith('INS-TEMP-')) {
-        const updated = await inspectionsApi.updateInspection(editingInspection.rawId || editingInspection.id, inspectionData);
+      const isExisting = Boolean(editingInspection && !editingInspection.isNew && editingInspection.rawId);
+      if (isExisting) {
+        const targetId = editingInspection.rawId || editingInspection.id;
+        const updated = await inspectionsApi.updateInspection(targetId, inspectionData);
         setInspections((prev) =>
-          prev.map((i) => (i.id === inspectionData.id ? updated : i))
+          prev.map((i) => (i.id === inspectionData.id || i.rawId === targetId ? updated : i))
         );
       } else {
         const created = await inspectionsApi.createInspection(inspectionData);
@@ -296,7 +298,7 @@ export default function InspectionsPage() {
       }
     } catch (err) {
       console.error('Failed to save inspection to MySQL:', err);
-      if (editingInspection) {
+      if (editingInspection && !editingInspection.isNew) {
         setInspections((prev) =>
           prev.map((i) => (i.id === inspectionData.id ? inspectionData : i))
         );
@@ -309,6 +311,7 @@ export default function InspectionsPage() {
 
   const handleStartInspectionFromAwaiting = (awaitingItem) => {
     setEditingInspection({
+      isNew: true,
       id: `INS-${Date.now()}`,
       inspectionNumber: `INSP-${Math.floor(1000 + Math.random() * 9000)}`,
       type: awaitingItem.type.includes('Return') ? 'Check-in (Return)' : 'Check-out (Pickup)',
@@ -340,10 +343,12 @@ export default function InspectionsPage() {
 
   const handleSaveAccident = async (accidentData) => {
     try {
-      if (editingAccident && editingAccident.id) {
-        const updated = await inspectionsApi.updateAccident(editingAccident.rawId || editingAccident.id, accidentData);
+      const isExisting = Boolean(editingAccident && !editingAccident.isNew && editingAccident.rawId);
+      if (isExisting) {
+        const targetId = editingAccident.rawId || editingAccident.id;
+        const updated = await inspectionsApi.updateAccident(targetId, accidentData);
         setAccidents((prev) =>
-          prev.map((a) => (a.id === accidentData.id ? updated : a))
+          prev.map((a) => (a.id === accidentData.id || a.rawId === targetId ? updated : a))
         );
       } else {
         const created = await inspectionsApi.createAccident(accidentData);
@@ -351,7 +356,7 @@ export default function InspectionsPage() {
       }
     } catch (err) {
       console.error('Failed to save accident to MySQL:', err);
-      if (editingAccident) {
+      if (editingAccident && !editingAccident.isNew) {
         setAccidents((prev) =>
           prev.map((a) => (a.id === accidentData.id ? accidentData : a))
         );

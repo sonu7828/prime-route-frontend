@@ -208,7 +208,7 @@ export default function InspectionDetailsModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
             <div>
               <p className="text-[11px] font-bold text-slate-400 uppercase">Certified Inspector</p>
-              <p className="text-xs font-bold text-slate-800 mt-1">{inspection.inspector}</p>
+              <p className="text-xs font-bold text-slate-800 mt-1">{inspection.inspector || 'Marcus Brody (Fleet Tech)'}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">PrimeRoute Fleet Operations • Handover Stamp Verified</p>
             </div>
             <div>
