@@ -210,6 +210,7 @@ export default function VehiclesPage() {
       auditApi.appendAuditLog({
         action: 'Vehicle Updated',
         module: 'Vehicles',
+        record: `${finalVehicle.name} (${finalVehicle.id})`,
         details: `Vehicle ${finalVehicle.id} (${finalVehicle.name}) updated.`
       });
       setToastMessage(`✓ Vehicle ${finalVehicle.id} (${finalVehicle.name}) updated successfully.`);
@@ -225,6 +226,7 @@ export default function VehiclesPage() {
       auditApi.appendAuditLog({
         action: 'Vehicle Created',
         module: 'Vehicles',
+        record: `${finalVehicle.name} (${finalVehicle.id})`,
         details: `New vehicle ${finalVehicle.id} (${finalVehicle.name}) added to fleet.`
       });
       setToastMessage(`✓ New vehicle ${finalVehicle.id} (${finalVehicle.name}) successfully added to fleet!`);
@@ -254,6 +256,7 @@ export default function VehiclesPage() {
     auditApi.appendAuditLog({
       action: 'Vehicle Removed',
       module: 'Vehicles',
+      record: `${targetName} (${targetId})`,
       details: `Vehicle ${targetId} (${targetName}) permanently deleted from fleet registry.`
     });
 

@@ -132,7 +132,8 @@ export default function SectionEmployment({ formData, errors = {}, onEmploymentC
             <option value="Marcus Brody">Marcus Brody (Owner & Managing Director)</option>
             <option value="Marcus Vance">Marcus Vance (Fleet Operations Lead)</option>
             <option value="Sarah Jenkins">Sarah Jenkins (Safety & Compliance)</option>
-            {currentManager && !['Elena Vance', 'Marcus Brody', 'Marcus Vance', 'Sarah Jenkins'].includes(currentManager) && (
+            <option value="John Doe">John Doe (Managing Director)</option>
+            {currentManager && !['Elena Vance', 'Marcus Brody', 'Marcus Vance', 'Sarah Jenkins', 'John Doe'].includes(currentManager) && (
               <option value={currentManager}>{currentManager}</option>
             )}
           </select>

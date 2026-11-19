@@ -11,7 +11,7 @@ export default function Header({
   onNavigate,
   onLogout
 }) {
-  const { currentRoleId, activeRole } = useRole();
+  const { currentRoleId, activeRole, currentUser } = useRole();
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -134,8 +134,12 @@ export default function Header({
               </div>
 
               <div className="hidden sm:block">
-                <p className="text-xs font-bold text-[#0A1E42] leading-tight">{activeRole.fullName}</p>
-                <p className="text-[10px] font-medium text-slate-500">{activeRole.title}</p>
+                <p className="text-xs font-bold text-[#0A1E42] leading-tight">
+                  {currentUser?.name || currentUser?.fullName || activeRole.fullName}
+                </p>
+                <p className="text-[10px] font-medium text-slate-500">
+                  {currentUser?.email || activeRole.title}
+                </p>
               </div>
 
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block transition-transform duration-200" />

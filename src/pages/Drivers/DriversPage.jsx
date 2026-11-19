@@ -179,6 +179,7 @@ export default function DriversPage() {
       auditApi.appendAuditLog({
         action: 'Driver Updated',
         module: 'Drivers',
+        record: `${driverData.name} (${driverData.id})`,
         details: `Driver ${driverData.name} (${driverData.id}) profile updated.`
       });
       setToastMessage(`✓ Driver ${driverData.name} (${driverData.id}) updated successfully.`);
@@ -194,6 +195,7 @@ export default function DriversPage() {
       auditApi.appendAuditLog({
         action: 'Driver Registered',
         module: 'Drivers',
+        record: `${driverData.name} (${driverData.id})`,
         details: `New driver ${driverData.name} (${driverData.id}) registered in fleet.`
       });
       setToastMessage(`✓ New driver ${driverData.name} (${driverData.id}) registered successfully!`);
@@ -226,6 +228,7 @@ export default function DriversPage() {
     auditApi.appendAuditLog({
       action: 'Driver Removed',
       module: 'Drivers',
+      record: `${targetName} (${targetId})`,
       details: `Driver ${targetName} (${targetId}) permanently removed from fleet registry.`
     });
 

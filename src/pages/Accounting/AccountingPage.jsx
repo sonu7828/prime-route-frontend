@@ -121,6 +121,7 @@ export default function AccountingPage() {
   // Load live data from backend MySQL database with caching & deduplication
   const loadData = useCallback(async (isInitial = false, forceRefresh = false) => {
     if (_accountingCache && !forceRefresh) {
+      applyData(_accountingCache);
       setIsLoading(false);
       return;
     }

@@ -24,10 +24,10 @@ import { authenticate, findUserByEmail } from '../../api/auth';
 import { ROLES_CONFIG } from '../../auth/permissions';
 
 export default function LoginPage({ onLogin }) {
-  const [email, setEmail] = useState('marcus.brody@primeroute.io');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -36,25 +36,27 @@ export default function LoginPage({ onLogin }) {
   const [resetSuccess, setResetSuccess] = useState(false);
 
   const matchedUser = findUserByEmail(email);
-  const currentRoleKey = matchedUser ? matchedUser.role : 'owner';
-  const activeRoleConfig = ROLES_CONFIG[currentRoleKey] || ROLES_CONFIG.owner;
+  const currentRoleKey = matchedUser ? matchedUser.role : (email ? 'rental_operations' : null);
+  const activeRoleConfig = currentRoleKey ? ROLES_CONFIG[currentRoleKey] : null;
 
   const roleInfo = {
-    id: currentRoleKey,
-    name: activeRoleConfig?.name || 'Owner / Primary Admin',
-    badge: activeRoleConfig?.badge || 'Full Root Privileges',
-    subtitle: currentRoleKey === 'rental_operations'
-      ? 'Fleet Operations • Dispatch & Operator Console'
-      : currentRoleKey === 'fleet_maintenance'
-      ? 'Maintenance & Shop • Fleet Operations Console'
-      : currentRoleKey === 'finance'
-      ? 'Finance & Accounting • Financial Console'
-      : currentRoleKey === 'secondary_admin'
-      ? 'Operations Management • Admin Console'
-      : currentRoleKey === 'readonly_manager'
-      ? 'Compliance & Audit • View-Only Console'
-      : 'Fleet Operations • Master Console',
-    defaultEmail: matchedUser ? matchedUser.email : 'marcus.brody@primeroute.io',
+    id: currentRoleKey || 'auth',
+    name: activeRoleConfig?.name || 'Corporate Portal Login',
+    badge: activeRoleConfig?.badge || 'Authorized Access',
+    subtitle: activeRoleConfig
+      ? (currentRoleKey === 'rental_operations'
+        ? 'Fleet Operations • Dispatch & Operator Console'
+        : currentRoleKey === 'fleet_maintenance'
+        ? 'Maintenance & Shop • Fleet Operations Console'
+        : currentRoleKey === 'finance'
+        ? 'Finance & Accounting • Financial Console'
+        : currentRoleKey === 'secondary_admin'
+        ? 'Operations Management • Admin Console'
+        : currentRoleKey === 'readonly_manager'
+        ? 'Compliance & Audit • View-Only Console'
+        : 'Fleet Operations • Master Console')
+      : 'Sign in to access your designated fleet console',
+    defaultEmail: matchedUser ? matchedUser.email : '',
     icon: Shield,
   };
 
@@ -91,7 +93,7 @@ export default function LoginPage({ onLogin }) {
     try {
       const user = await authenticate(email, password);
       setIsLoading(false);
-      if (onLogin) onLogin(user.role);
+      if (onLogin) onLogin(user);
     } catch (err) {
       setIsLoading(false);
       if (err.status === 404) {
@@ -453,6 +455,24 @@ export default function LoginPage({ onLogin }) {
                   />
                   <span className="font-medium">Remember me on this device</span>
                 </label>
+              </div>
+
+              {/* Quick Login Helper Chips so credentials are never forgotten */}
+              <div className="pt-1 pb-1">
+                <p className="text-[11px] font-semibold text-slate-500 mb-1.5">Quick Fill Demo Accounts:</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('marcus.brody@primeroute.io');
+                      setPassword('password123');
+                    }}
+                    className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors cursor-pointer"
+                  >
+                    Owner (Marcus Brody)
+                  </button>
+                 
+                </div>
               </div>
 
               {/* PRIMARY LOGIN BUTTON */}

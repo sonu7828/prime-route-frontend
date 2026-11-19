@@ -128,7 +128,7 @@ export default function AuditLogTab() {
         User: l.user,
         Action: l.action,
         Module: l.module,
-        TargetRecord: l.record,
+        TargetRecord: formatTargetRecord(l),
         PreviousValue: l.previousValue || 'N/A',
         NewValue: l.newValue || 'N/A',
         AuditNotes: l.notes
@@ -145,7 +145,7 @@ export default function AuditLogTab() {
           User: l.user,
           Action: l.action,
           Module: l.module,
-          TargetRecord: l.record,
+          TargetRecord: formatTargetRecord(l),
           PreviousValue: l.previousValue || 'N/A',
           NewValue: l.newValue || 'N/A',
           AuditNotes: l.notes
@@ -165,12 +165,18 @@ export default function AuditLogTab() {
   const getActionBadgeColor = (action) => {
     switch (action) {
       case 'Create':
+      case 'Driver Registered':
+      case 'Vehicle Created':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'Edit':
+      case 'Driver Updated':
+      case 'Vehicle Updated':
         return 'bg-blue-50 text-[#075EE8] border-blue-200';
       case 'Approve':
         return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'Archive':
+      case 'Driver Removed':
+      case 'Vehicle Removed':
         return 'bg-slate-100 text-slate-700 border-slate-300';
       case 'Contract Generated / Amended':
         return 'bg-amber-50 text-amber-800 border-amber-200';
@@ -179,8 +185,43 @@ export default function AuditLogTab() {
       case 'Document Activity':
         return 'bg-indigo-50 text-indigo-700 border-indigo-200';
       default:
-        return 'bg-slate-50 text-slate-700 border-slate-200';
+        return 'bg-blue-50/60 text-[#075EE8] border-blue-100';
     }
+  };
+
+  const formatTargetRecord = (log) => {
+    if (!log) return 'Record';
+    const rec = (log.record || '').trim();
+    const mod = (log.module || '').trim();
+    const text = String(log.notes || log.newValue || '');
+
+    // Check if text has an explicit driver or vehicle entity tag
+    const driverMatch = text.match(/(?:New driver|Driver)\s+([^.]*?\([^)]+\))/i);
+    if (driverMatch && driverMatch[1]) {
+      return driverMatch[1].trim();
+    }
+
+    const vehicleMatch = text.match(/(?:New vehicle|Vehicle)\s+([^.]*?\([^)]+\))/i);
+    if (vehicleMatch && vehicleMatch[1]) {
+      return vehicleMatch[1].trim();
+    }
+
+    // Generic entity identifier match e.g. "name (CODE-xxx)"
+    const entityWithCodeMatch = text.match(/([A-Za-z0-9\s._-]+?\s*\([A-Z]{2,4}-[^)]+\))/i);
+    if (
+      entityWithCodeMatch &&
+      entityWithCodeMatch[1] &&
+      (!rec || rec.toLowerCase() === mod.toLowerCase() || ['drivers', 'vehicles', 'system'].includes(rec.toLowerCase()))
+    ) {
+      return entityWithCodeMatch[1].trim();
+    }
+
+    // If rec is not generic (like "Drivers" or "Vehicles" or module name), use rec
+    if (rec && rec.toLowerCase() !== mod.toLowerCase() && !['drivers', 'vehicles', 'system'].includes(rec.toLowerCase())) {
+      return rec;
+    }
+
+    return rec || mod || 'Record';
   };
 
   // Render clean State Change display tailored to fleet workflow
@@ -465,7 +506,7 @@ export default function AuditLogTab() {
 
                   {/* Target Record */}
                   <td className="py-3 px-3 font-mono font-bold text-[#0A1E42] whitespace-nowrap">
-                    {log.record}
+                    {formatTargetRecord(log)}
                   </td>
 
                   {/* State Change (Old -> New) tailored cleanly */}
@@ -548,7 +589,7 @@ export default function AuditLogTab() {
                   Target Record Affected
                 </label>
                 <div className="p-2.5 rounded-xl bg-slate-100 font-mono font-bold text-[#0A1E42]">
-                  {selectedLogForDetails.record}
+                  {formatTargetRecord(selectedLogForDetails)}
                 </div>
               </div>
 
