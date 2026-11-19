@@ -73,7 +73,7 @@ export default function ExpenseModal({
     category: 'repairs',
     vehicle: 'Fleet Wide',
     relatedDriver: 'None / Fleet Wide',
-    vendor: 'Speedy Pro Auto Clinic',
+    vendor: '',
     invoiceNumber: '',
     description: '',
     amount: '',
@@ -97,7 +97,7 @@ export default function ExpenseModal({
         category: 'repairs',
         vehicle: 'Fleet Wide',
         relatedDriver: 'None / Fleet Wide',
-        vendor: vendors[0]?.name || 'Speedy Pro Auto Clinic',
+        vendor: '',
         invoiceNumber: '',
         description: '',
         amount: '',
@@ -321,20 +321,19 @@ export default function ExpenseModal({
             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
               Vendor / Payee <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="text"
-              list="vendor-suggestions"
+            <select
               value={formData.vendor}
               onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
-              placeholder="Select or enter vendor name"
-              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8] font-medium"
+              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8] font-medium cursor-pointer"
               required
-            />
-            <datalist id="vendor-suggestions">
+            >
+              <option value="">-- Select Vendor / Payee --</option>
               {vendors.map((v) => (
-                <option key={v.id} value={v.name} />
+                <option key={v.id} value={v.name}>
+                  {v.name}
+                </option>
               ))}
-            </datalist>
+            </select>
           </div>
 
           <div>
