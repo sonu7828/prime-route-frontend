@@ -39,16 +39,20 @@ import { maintenanceApi } from '../../api/maintenanceApi';
 import { vendorsApi } from '../../api/vendorsApi';
 import Can from '../../auth/Can';
 
+// Module-level in-memory cache to prevent redundant re-fetching on page switch
+let _maintenanceCache = null;
+let _maintenanceInFlight = null;
+
 export default function MaintenancePage() {
   const { vehicles = [], updateVehicleStatus } = useFleet();
-  const [records, setRecords] = useState([]);
-  const [liveStats, setLiveStats] = useState(null);
-  const [vendors, setVendors] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [records, setRecords] = useState(() => _maintenanceCache?.records || []);
+  const [liveStats, setLiveStats] = useState(() => _maintenanceCache?.liveStats || null);
+  const [vendors, setVendors] = useState(() => _maintenanceCache?.vendors || []);
+  const [isLoading, setIsLoading] = useState(!_maintenanceCache);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [lastRefreshed, setLastRefreshed] = useState(() => _maintenanceCache?.lastRefreshed || new Date());
 
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'overdue' | 'duesoon' | 'scheduled' | 'inprogress' | 'completed'
@@ -63,27 +67,63 @@ export default function MaintenancePage() {
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   const defaultInterval = 5000;
 
-  // Load live data from MySQL
-  const loadData = useCallback(async (isSilent = false) => {
-    if (!isSilent) setIsLoading(true);
-    else setIsRefreshing(true);
+  // Load live data from MySQL with caching and deduplication
+  const loadData = useCallback(async (isSilent = false, forceRefresh = false) => {
+    if (_maintenanceCache && !forceRefresh) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (!_maintenanceCache && !isSilent) {
+      setIsLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     setFetchError(null);
 
-    try {
+    if (_maintenanceInFlight) {
+      try {
+        const result = await _maintenanceInFlight;
+        setRecords(result.records);
+        if (result.liveStats) setLiveStats(result.liveStats);
+        if (result.vendors) setVendors(result.vendors);
+        setLastRefreshed(result.lastRefreshed);
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+      return;
+    }
+
+    _maintenanceInFlight = (async () => {
       const [recs, statsData, vendorsData] = await Promise.all([
         maintenanceApi.getMaintenanceRecords(),
         maintenanceApi.getMaintenanceStats().catch(() => null),
         vendorsApi.getVendors().catch(() => ({ vendors: [] }))
       ]);
 
-      setRecords(recs || []);
-      if (statsData) setLiveStats(statsData);
-      if (vendorsData?.vendors) setVendors(vendorsData.vendors);
-      setLastRefreshed(new Date());
+      const now = new Date();
+      const result = {
+        records: recs || [],
+        liveStats: statsData || null,
+        vendors: vendorsData?.vendors || [],
+        lastRefreshed: now
+      };
+      _maintenanceCache = result;
+      return result;
+    })();
+
+    try {
+      const result = await _maintenanceInFlight;
+      setRecords(result.records);
+      if (result.liveStats) setLiveStats(result.liveStats);
+      if (result.vendors) setVendors(result.vendors);
+      setLastRefreshed(result.lastRefreshed);
     } catch (err) {
       console.error('Failed to load maintenance records:', err);
       setFetchError(err.message || 'Failed to load maintenance records from server');
     } finally {
+      _maintenanceInFlight = null;
       setIsLoading(false);
       setIsRefreshing(false);
     }
@@ -231,11 +271,11 @@ export default function MaintenancePage() {
 
     try {
       await maintenanceApi.toggleVehicleAvailability(targetIdOrPlate, nextStatus);
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to toggle vehicle availability:', err);
       setToastMessage(`Error: ${err.message || 'Failed to update vehicle status'}`);
-      await loadData(true);
+      await loadData(true, true);
     }
 
     setTimeout(() => setToastMessage(null), 5000);
@@ -248,7 +288,7 @@ export default function MaintenancePage() {
         status: 'in_progress'
       });
       setToastMessage(`✓ Work order ${record.id} started. Vehicle placed in workshop bay.`);
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to start service:', err);
       setToastMessage(`Error: ${err.message || 'Failed to start service'}`);
@@ -266,7 +306,7 @@ export default function MaintenancePage() {
         serviceDate: new Date().toISOString().split('T')[0]
       });
       setToastMessage(`✓ Work order ${record.id} completed. Vehicle certified and restored to Available.`);
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to complete service:', err);
       setToastMessage(`Error: ${err.message || 'Failed to complete service'}`);
@@ -288,7 +328,7 @@ export default function MaintenancePage() {
       }
       setIsModalOpen(false);
       setEditingRecord(null);
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to save maintenance job:', err);
       setToastMessage(`Error: ${err.message || 'Failed to save maintenance record'}`);
@@ -305,7 +345,7 @@ export default function MaintenancePage() {
       await maintenanceApi.deleteMaintenanceRecord(deletingRecord.rawId || deletingRecord.id);
       setToastMessage(`Maintenance record ${deletingRecord.id} permanently removed from database.`);
       setDeletingRecord(null);
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to delete record:', err);
       setToastMessage(`Error: ${err.message || 'Failed to delete maintenance record'}`);
@@ -343,7 +383,7 @@ export default function MaintenancePage() {
       <ErrorState
         title="Unable to load maintenance records"
         message={fetchError}
-        onRetry={() => loadData()}
+        onRetry={() => loadData(false, true)}
       />
     );
   }
@@ -375,7 +415,7 @@ export default function MaintenancePage() {
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
           {/* Refresh Button */}
           <button
-            onClick={() => loadData(true)}
+            onClick={() => loadData(true, true)}
             disabled={isRefreshing}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95 disabled:opacity-50"
             title={`Last refreshed at ${lastRefreshed.toLocaleTimeString()}`}

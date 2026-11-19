@@ -52,6 +52,10 @@ const TABS = [
   { id: 'reports', label: 'Reports' },
 ];
 
+// Module-level in-memory cache to prevent redundant re-fetching on tab switches
+let _accountingCache = null;
+let _accountingInFlight = null;
+
 export default function AccountingPage() {
   const { drivers = [], rentals = [], vehicles = [] } = useFleet();
 
@@ -59,21 +63,21 @@ export default function AccountingPage() {
   const [activeTab, setActiveTab] = useState('charges');
   const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false);
 
-  // Live Database Subledger States
-  const [charges, setCharges] = useState([]);
-  const [payments, setPayments] = useState([]);
-  const [deposits, setDeposits] = useState([]);
-  const [refunds, setRefunds] = useState([]);
-  const [credits, setCredits] = useState([]);
-  const [invoices, setInvoices] = useState([]);
-  const [payables, setPayables] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [vendors, setVendors] = useState([]);
-  const [dbDriverBalances, setDbDriverBalances] = useState([]);
-  const [backendStats, setBackendStats] = useState(null);
+  // Live Database Subledger States initialized from memory cache if available
+  const [charges, setCharges] = useState(() => _accountingCache?.charges || []);
+  const [payments, setPayments] = useState(() => _accountingCache?.payments || []);
+  const [deposits, setDeposits] = useState(() => _accountingCache?.deposits || []);
+  const [refunds, setRefunds] = useState(() => _accountingCache?.refunds || []);
+  const [credits, setCredits] = useState(() => _accountingCache?.credits || []);
+  const [invoices, setInvoices] = useState(() => _accountingCache?.invoices || []);
+  const [payables, setPayables] = useState(() => _accountingCache?.payables || []);
+  const [expenses, setExpenses] = useState(() => _accountingCache?.expenses || []);
+  const [vendors, setVendors] = useState(() => _accountingCache?.vendors || []);
+  const [dbDriverBalances, setDbDriverBalances] = useState(() => _accountingCache?.dbDriverBalances || []);
+  const [backendStats, setBackendStats] = useState(() => _accountingCache?.backendStats || null);
 
   // Loading & Feedback
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!_accountingCache);
   const [fetchError, setFetchError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notification, setNotification] = useState('');
@@ -100,11 +104,43 @@ export default function AccountingPage() {
     }
   }, [notification]);
 
-  // Load live data from backend MySQL database
-  const loadData = useCallback(async (isInitial = false) => {
-    if (isInitial) setIsLoading(true);
+  const applyData = useCallback((data) => {
+    setCharges(data.charges);
+    setPayments(data.payments);
+    setDeposits(data.deposits);
+    setRefunds(data.refunds);
+    setCredits(data.credits);
+    setInvoices(data.invoices);
+    setPayables(data.payables);
+    setExpenses(data.expenses);
+    setDbDriverBalances(data.dbDriverBalances);
+    setVendors(data.vendors);
+    if (data.backendStats) setBackendStats(data.backendStats);
+  }, []);
+
+  // Load live data from backend MySQL database with caching & deduplication
+  const loadData = useCallback(async (isInitial = false, forceRefresh = false) => {
+    if (_accountingCache && !forceRefresh) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (!_accountingCache) {
+      setIsLoading(true);
+    }
     setFetchError(null);
-    try {
+
+    if (_accountingInFlight) {
+      try {
+        const result = await _accountingInFlight;
+        applyData(result);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    _accountingInFlight = (async () => {
       const [
         chargesData,
         paymentsData,
@@ -129,24 +165,35 @@ export default function AccountingPage() {
         accountingApi.getStats().catch(() => null)
       ]);
 
-      setCharges(Array.isArray(chargesData) ? chargesData : []);
-      setPayments(Array.isArray(paymentsData) ? paymentsData : []);
-      setDeposits(Array.isArray(depositsData) ? depositsData : []);
-      setRefunds(Array.isArray(refundsData) ? refundsData : []);
-      setCredits(Array.isArray(creditsData) ? creditsData : []);
-      setInvoices(Array.isArray(invoicesData) ? invoicesData : []);
-      setPayables(Array.isArray(payablesData) ? payablesData : []);
-      setExpenses(Array.isArray(payablesData) ? payablesData : []);
-      setDbDriverBalances(Array.isArray(balancesData) ? balancesData : []);
-      setVendors(Array.isArray(vendorsData) ? vendorsData : []);
-      if (statsData) setBackendStats(statsData);
+      const result = {
+        charges: Array.isArray(chargesData) ? chargesData : [],
+        payments: Array.isArray(paymentsData) ? paymentsData : [],
+        deposits: Array.isArray(depositsData) ? depositsData : [],
+        refunds: Array.isArray(refundsData) ? refundsData : [],
+        credits: Array.isArray(creditsData) ? creditsData : [],
+        invoices: Array.isArray(invoicesData) ? invoicesData : [],
+        payables: Array.isArray(payablesData) ? payablesData : [],
+        expenses: Array.isArray(payablesData) ? payablesData : [],
+        dbDriverBalances: Array.isArray(balancesData) ? balancesData : [],
+        vendors: Array.isArray(vendorsData) ? vendorsData : [],
+        backendStats: statsData || null
+      };
+
+      _accountingCache = result;
+      return result;
+    })();
+
+    try {
+      const result = await _accountingInFlight;
+      applyData(result);
     } catch (err) {
       console.error('Accounting API Error:', err);
       setFetchError(err.message || 'Failed to connect to accounting database');
     } finally {
+      _accountingInFlight = null;
       setIsLoading(false);
     }
-  }, []);
+  }, [applyData]);
 
   useEffect(() => {
     loadData(true);
@@ -351,7 +398,7 @@ export default function AccountingPage() {
     try {
       await accountingApi.createCharge(chargeData);
       setNotification(`Charge "${chargeData.category}" (${formatCurrency(chargeData.amount)}) posted to database!`);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to post charge:', err);
       setNotification(`Error: ${err.message || 'Failed to post charge'}`);
@@ -368,7 +415,7 @@ export default function AccountingPage() {
       setSelectedPaymentReceipt(created || newPayment);
       setNotification(`Payment of ${formatCurrency(newPayment.amount)} recorded in database!`);
       setIsPaymentModalOpen(false);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to record payment:', err);
       setNotification(`Error: ${err.message || 'Failed to record payment'}`);
@@ -383,7 +430,7 @@ export default function AccountingPage() {
     try {
       await accountingApi.createDeposit(newDep);
       setNotification(`Security deposit of ${formatCurrency(newDep.depositAmount || newDep.amount)} held in escrow database.`);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to record deposit:', err);
       setNotification(`Error: ${err.message || 'Failed to record deposit'}`);
@@ -400,7 +447,7 @@ export default function AccountingPage() {
         reason: 'Lease concluded; deposit released from escrow.'
       });
       setNotification('Security deposit released from escrow and refund recorded in database.');
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to release deposit:', err);
       setNotification(`Error: ${err.message || 'Failed to release deposit'}`);
@@ -415,7 +462,7 @@ export default function AccountingPage() {
     try {
       await accountingApi.createRefund(newRef);
       setNotification(`Refund of ${formatCurrency(newRef.amount)} recorded in database.`);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to record refund:', err);
       setNotification(`Error: ${err.message || 'Failed to record refund'}`);
@@ -430,7 +477,7 @@ export default function AccountingPage() {
     try {
       await accountingApi.createCredit(newCr);
       setNotification(`Credit adjustment of ${formatCurrency(newCr.amount)} applied in database.`);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to add credit:', err);
       setNotification(`Error: ${err.message || 'Failed to add credit'}`);
@@ -446,7 +493,7 @@ export default function AccountingPage() {
       await accountingApi.createInvoice(newInv);
       setNotification(`Invoice created and saved in database.`);
       setIsInvoiceModalOpen(false);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to save invoice:', err);
       setNotification(`Error: ${err.message || 'Failed to save invoice'}`);
@@ -461,7 +508,7 @@ export default function AccountingPage() {
     try {
       await accountingApi.createPayable(newP);
       setNotification(`Vendor payable bill "${newP.category}" (${formatCurrency(newP.amount)}) recorded in database.`);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to record payable:', err);
       setNotification(`Error: ${err.message || 'Failed to record payable'}`);
@@ -475,7 +522,7 @@ export default function AccountingPage() {
     try {
       await accountingApi.updatePayableStatus(id, 'approved');
       setNotification(`Payable bill approved for payment.`);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to approve payable:', err);
       setNotification(`Error: ${err.message || 'Failed to approve payable'}`);
@@ -489,7 +536,7 @@ export default function AccountingPage() {
     try {
       await accountingApi.updatePayableStatus(id, 'paid');
       setNotification(`Payable bill settled and marked as Paid in database.`);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to mark payable as paid:', err);
       setNotification(`Error: ${err.message || 'Failed to mark payable paid'}`);
@@ -505,7 +552,7 @@ export default function AccountingPage() {
       await accountingApi.createPayable(newExp);
       setNotification(`Expense ${newExp.vendor || 'Vendor'} (${formatCurrency(newExp.amount || 0)}) logged in database.`);
       setIsExpenseModalOpen(false);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to log expense:', err);
       setNotification(`Error: ${err.message || 'Failed to log expense'}`);
@@ -520,7 +567,7 @@ export default function AccountingPage() {
       await accountingApi.updatePayableStatus(id, status);
       setNotification(`Expense ${id} status updated to ${status}.`);
       setApprovalModalData(null);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to update expense approval:', err);
       setNotification(`Error: ${err.message || 'Failed to update approval'}`);
@@ -535,7 +582,7 @@ export default function AccountingPage() {
       await accountingApi.updatePayableStatus(updatedExpense.id, updatedExpense.status || 'approved');
       setNotification(`Expense ${updatedExpense.id} updated with audit note.`);
       setCorrectingExpense(null);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to correct expense:', err);
       setNotification(`Error: ${err.message || 'Failed to correct expense'}`);
@@ -556,7 +603,7 @@ export default function AccountingPage() {
       });
       setNotification(`Transaction ${originalTx.id} reversed. Linked correction entry created in database.`);
       setReversingTx(null);
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Failed to reverse transaction:', err);
       setNotification(`Error: ${err.message || 'Failed to reverse transaction'}`);
@@ -579,7 +626,7 @@ export default function AccountingPage() {
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           {/* Refresh Button */}
           <button
-            onClick={() => loadData(false)}
+            onClick={() => loadData(false, true)}
             disabled={isLoading || isSubmitting}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-2xs transition-all cursor-pointer"
             title="Refresh Accounting Data"
@@ -672,7 +719,7 @@ export default function AccountingPage() {
         <ErrorState
           title="Accounting Database Connection Error"
           message={fetchError}
-          onRetry={() => loadData(true)}
+          onRetry={() => loadData(false, true)}
         />
       ) : (
         <>

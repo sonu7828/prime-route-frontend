@@ -1,11 +1,17 @@
 import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { PieChart as PieIcon } from 'lucide-react';
-import { fleetStatusData } from '../../data/mockData';
+
+const defaultFleetStatus = [
+  { name: 'Available', value: 0, color: '#10B981' },
+  { name: 'Rented', value: 0, color: '#075EE8' },
+  { name: 'Maintenance', value: 0, color: '#F59E0B' },
+  { name: 'Reserved', value: 0, color: '#6366F1' },
+];
 
 export default function FleetStatusChart({ data }) {
-  const currentData = (data && data.length > 0) ? data : fleetStatusData;
-  const total = currentData.reduce((acc, curr) => acc + curr.value, 0);
+  const currentData = (data && data.length > 0) ? data : defaultFleetStatus;
+  const total = currentData.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
 
   return (
     <div className="bg-white rounded-2xl p-3.5 sm:p-4 xl:p-5 border border-slate-100 shadow-[0_2px_12px_rgba(7,29,73,0.04)] h-full flex flex-col justify-between overflow-hidden">

@@ -36,12 +36,16 @@ import { exportToCsv } from '../../utils/exportCsv';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { useFleet } from '../../context/FleetContext';
 
+// Module-level in-memory cache to prevent redundant re-fetching on page switch
+let _tollsCache = null;
+let _tollsInFlight = null;
+
 export default function TollsTicketsPage() {
   const { rentals = [], drivers = [] } = useFleet();
-  const [tickets, setTickets] = useState([]);
-  const [tolls, setTolls] = useState([]);
-  const [liveStats, setLiveStats] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [tickets, setTickets] = useState(() => _tollsCache?.tickets || []);
+  const [tolls, setTolls] = useState(() => _tollsCache?.tolls || []);
+  const [liveStats, setLiveStats] = useState(() => _tollsCache?.liveStats || null);
+  const [isLoading, setIsLoading] = useState(!_tollsCache);
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unresolved' | 'overdue' | 'charged' | 'paid' | 'tolls'
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,23 +59,55 @@ export default function TollsTicketsPage() {
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // Fetch live data from backend API
-  const loadData = useCallback(async (quiet = false) => {
-    if (!quiet) setIsLoading(true);
-    try {
+  // Fetch live data from backend API with caching and deduplication
+  const loadData = useCallback(async (quiet = false, forceRefresh = false) => {
+    if (_tollsCache && !forceRefresh) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (!_tollsCache && !quiet) {
+      setIsLoading(true);
+    }
+
+    if (_tollsInFlight) {
+      try {
+        const result = await _tollsInFlight;
+        setTickets(result.tickets);
+        setTolls(result.tolls);
+        setLiveStats(result.liveStats);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    _tollsInFlight = (async () => {
       const [ticketsData, tollsData, statsData] = await Promise.all([
         tollsApi.getTickets(),
         tollsApi.getTolls(),
         tollsApi.getStats()
       ]);
-      setTickets(ticketsData || []);
-      setTolls(tollsData || []);
-      setLiveStats(statsData || null);
+      const result = {
+        tickets: ticketsData || [],
+        tolls: tollsData || [],
+        liveStats: statsData || null
+      };
+      _tollsCache = result;
+      return result;
+    })();
+
+    try {
+      const result = await _tollsInFlight;
+      setTickets(result.tickets);
+      setTolls(result.tolls);
+      setLiveStats(result.liveStats);
     } catch (err) {
       console.error('Failed to load tolls & tickets:', err);
       setToastMessage(`Error: ${err.message || 'Failed to fetch live database records'}`);
     } finally {
-      if (!quiet) setIsLoading(false);
+      _tollsInFlight = null;
+      setIsLoading(false);
     }
   }, []);
 
@@ -215,7 +251,7 @@ export default function TollsTicketsPage() {
         await tollsApi.createTicket(ticketData);
         setToastMessage(`✓ Citation notice ${ticketData.referenceNumber || ticketData.ticketNumber} registered in MySQL.`);
       }
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to save ticket:', err);
       setToastMessage(`Error: ${err.message || 'Failed to save citation notice'}`);
@@ -230,7 +266,7 @@ export default function TollsTicketsPage() {
     try {
       await tollsApi.deleteTicket(deletingTicket.rawId || deletingTicket.id);
       setToastMessage(`✓ Citation notice ${deletingTicket.ticketNumber || deletingTicket.referenceNumber} removed from database.`);
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to delete ticket:', err);
       setToastMessage(`Error: ${err.message || 'Failed to delete citation notice'}`);
@@ -247,7 +283,7 @@ export default function TollsTicketsPage() {
     try {
       await tollsApi.updateWorkflow(id, 'under_review');
       setToastMessage(`✓ Violation ${target?.referenceNumber || ticketId} status transitioned to "Under Review".`);
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to update workflow:', err);
       setToastMessage(`Error: ${err.message || 'Failed to update workflow'}`);
@@ -261,7 +297,7 @@ export default function TollsTicketsPage() {
     try {
       await tollsApi.updateWorkflow(id, 'assign', { driverId: target?.driverId });
       setToastMessage(`✓ Violation ${target?.referenceNumber || ticketId} driver verified and marked as "Assigned". Ready for recharge.`);
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to assign driver:', err);
       setToastMessage(`Error: ${err.message || 'Failed to assign driver'}`);
@@ -279,7 +315,7 @@ export default function TollsTicketsPage() {
       setToastMessage(
         `⚡ Successfully charged ${formatCurrency(totalCharge)} (${formatCurrency(fine)} fine + $${adminFee} processing fee) to ${ticket.driver}'s rental subledger.`
       );
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to charge driver:', err);
       setToastMessage(`Error: ${err.message || 'Failed to charge driver'}`);
@@ -293,7 +329,7 @@ export default function TollsTicketsPage() {
     try {
       await tollsApi.updateWorkflow(id, 'mark_paid');
       setToastMessage(`✓ Violation ${target?.referenceNumber || ticketId} marked as Paid & Cleared with city issuing authority.`);
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to mark paid:', err);
       setToastMessage(`Error: ${err.message || 'Failed to mark paid'}`);
@@ -307,7 +343,7 @@ export default function TollsTicketsPage() {
     try {
       await tollsApi.updateWorkflow(id, 'dispute');
       setToastMessage(`⚠️ Violation ${target?.referenceNumber || ticketId} marked as Disputed by driver. Review transponder/license logs.`);
-      await loadData(true);
+      await loadData(true, true);
     } catch (err) {
       console.error('Failed to flag dispute:', err);
       setToastMessage(`Error: ${err.message || 'Failed to flag dispute'}`);
@@ -349,7 +385,7 @@ export default function TollsTicketsPage() {
 
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
           <button
-            onClick={() => loadData(false)}
+            onClick={() => loadData(false, true)}
             disabled={isLoading}
             className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all active:scale-95 duration-150 cursor-pointer disabled:opacity-60"
             title="Refresh from MySQL"

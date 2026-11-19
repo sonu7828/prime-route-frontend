@@ -35,7 +35,6 @@ import UploadDocumentModal from './UploadDocumentModal';
 import DocumentPreviewModal from './DocumentPreviewModal';
 import RestrictedAccessModal from './RestrictedAccessModal';
 import { documentsApi } from '../../api/documentsApi';
-import { initialDocuments } from '../../data/mockData';
 import { formatDate } from '../../utils/formatters';
 import { useRole } from '../../context/RoleContext';
 import Can from '../../auth/Can';
