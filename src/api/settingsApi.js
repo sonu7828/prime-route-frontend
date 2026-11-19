@@ -57,6 +57,7 @@ export const settingsApi = {
       // 1. Try dedicated endpoint first
       const res = await request('/settings/statuses-categories');
       if (res?.data) {
+        localStorage.setItem('primeroute_statuses_categories', JSON.stringify(res.data));
         return res.data;
       }
     } catch (err) {
@@ -83,7 +84,9 @@ export const settingsApi = {
             try { ticketStatuses = JSON.parse(map['ticket_statuses']); } catch {}
           }
 
-          return { vehicleStatuses, expenseCategories, ticketStatuses };
+          const resolved = { vehicleStatuses, expenseCategories, ticketStatuses };
+          localStorage.setItem('primeroute_statuses_categories', JSON.stringify(resolved));
+          return resolved;
         }
       } catch (innerErr) {
         console.warn('Could not fetch from /settings, using local cache:', innerErr);
@@ -114,7 +117,6 @@ export const settingsApi = {
         return res.data;
       }
     } catch (err) {
-      // Fallback: Save via /settings/general payload which writes to settings table
       try {
         await request('/settings/general', {
           method: 'PUT',
@@ -137,12 +139,29 @@ export const settingsApi = {
         method: 'POST',
         body: JSON.stringify(newItem)
       });
+      if (res?.data) {
+        const current = await this.getStatusesAndCategories();
+        localStorage.setItem('primeroute_statuses_categories', JSON.stringify({ ...current, vehicleStatuses: res.data }));
+        return res.data;
+      }
+    } catch {}
+
+    const current = await this.getStatusesAndCategories();
+    const list = [...(current.vehicleStatuses || []), newItem];
+    await this.updateStatusesAndCategories({ ...current, vehicleStatuses: list });
+    return list;
+  },
+
+  async deleteVehicleStatus(id) {
+    try {
+      const res = await request(`/settings/vehicle-statuses/${id}`, {
+        method: 'DELETE'
+      });
       if (res?.data) return res.data;
     } catch {}
 
-    // Fallback: update whole list
     const current = await this.getStatusesAndCategories();
-    const list = [...(current.vehicleStatuses || []), newItem];
+    const list = (current.vehicleStatuses || []).filter((v) => v.id !== id);
     await this.updateStatusesAndCategories({ ...current, vehicleStatuses: list });
     return list;
   },
@@ -153,12 +172,29 @@ export const settingsApi = {
         method: 'POST',
         body: JSON.stringify(newItem)
       });
+      if (res?.data) {
+        const current = await this.getStatusesAndCategories();
+        localStorage.setItem('primeroute_statuses_categories', JSON.stringify({ ...current, expenseCategories: res.data }));
+        return res.data;
+      }
+    } catch {}
+
+    const current = await this.getStatusesAndCategories();
+    const list = [...(current.expenseCategories || []), newItem];
+    await this.updateStatusesAndCategories({ ...current, expenseCategories: list });
+    return list;
+  },
+
+  async deleteExpenseCategory(id) {
+    try {
+      const res = await request(`/settings/expense-categories/${id}`, {
+        method: 'DELETE'
+      });
       if (res?.data) return res.data;
     } catch {}
 
-    // Fallback: update whole list
     const current = await this.getStatusesAndCategories();
-    const list = [...(current.expenseCategories || []), newItem];
+    const list = (current.expenseCategories || []).filter((v) => v.id !== id && v.code !== id);
     await this.updateStatusesAndCategories({ ...current, expenseCategories: list });
     return list;
   },
@@ -169,12 +205,29 @@ export const settingsApi = {
         method: 'POST',
         body: JSON.stringify(newItem)
       });
+      if (res?.data) {
+        const current = await this.getStatusesAndCategories();
+        localStorage.setItem('primeroute_statuses_categories', JSON.stringify({ ...current, ticketStatuses: res.data }));
+        return res.data;
+      }
+    } catch {}
+
+    const current = await this.getStatusesAndCategories();
+    const list = [...(current.ticketStatuses || []), newItem];
+    await this.updateStatusesAndCategories({ ...current, ticketStatuses: list });
+    return list;
+  },
+
+  async deleteTicketStatus(id) {
+    try {
+      const res = await request(`/settings/ticket-statuses/${id}`, {
+        method: 'DELETE'
+      });
       if (res?.data) return res.data;
     } catch {}
 
-    // Fallback: update whole list
     const current = await this.getStatusesAndCategories();
-    const list = [...(current.ticketStatuses || []), newItem];
+    const list = (current.ticketStatuses || []).filter((v) => v.id !== id);
     await this.updateStatusesAndCategories({ ...current, ticketStatuses: list });
     return list;
   }

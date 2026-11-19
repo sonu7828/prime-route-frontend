@@ -6,6 +6,7 @@ import {
   Plus,
   CheckCircle2,
   RefreshCw,
+  Trash2,
   AlertCircle
 } from 'lucide-react';
 import {
@@ -99,8 +100,8 @@ export default function StatusesAndCategoriesTab() {
       name: newVehicleStatus.name.trim(),
       color: newVehicleStatus.color,
       description: newVehicleStatus.description || 'Custom administrative fleet status',
-      canRent: newVehicleStatus.canRent,
-      canIntake: newVehicleStatus.canIntake,
+      canRent: Boolean(newVehicleStatus.canRent),
+      canIntake: Boolean(newVehicleStatus.canIntake),
       isSystem: false
     };
 
@@ -120,6 +121,26 @@ export default function StatusesAndCategoriesTab() {
       setVehicleStatuses((prev) => [...prev, newEntry]);
       setIsVehicleModalOpen(false);
       showToast(`Vehicle status "${newEntry.name}" added.`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Delete Vehicle Status
+  const handleDeleteVehicleStatus = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to remove status "${name}" from the database?`)) return;
+    setIsSaving(true);
+    try {
+      const updated = await settingsApi.deleteVehicleStatus(id);
+      if (Array.isArray(updated)) {
+        setVehicleStatuses(updated);
+      } else {
+        setVehicleStatuses((prev) => prev.filter((v) => v.id !== id));
+      }
+      showToast(`Vehicle status "${name}" deleted from database.`);
+    } catch (err) {
+      console.error('Error deleting vehicle status:', err);
+      setVehicleStatuses((prev) => prev.filter((v) => v.id !== id));
     } finally {
       setIsSaving(false);
     }
@@ -160,6 +181,26 @@ export default function StatusesAndCategoriesTab() {
     }
   };
 
+  // Delete Expense Category
+  const handleDeleteExpenseCategory = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to remove category "${name}" from the database?`)) return;
+    setIsSaving(true);
+    try {
+      const updated = await settingsApi.deleteExpenseCategory(id);
+      if (Array.isArray(updated)) {
+        setExpenseCategories(updated);
+      } else {
+        setExpenseCategories((prev) => prev.filter((c) => c.id !== id && c.code !== id));
+      }
+      showToast(`Expense category "${name}" deleted from database.`);
+    } catch (err) {
+      console.error('Error deleting expense category:', err);
+      setExpenseCategories((prev) => prev.filter((c) => c.id !== id && c.code !== id));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Add Ticket Status
   const handleAddTicketStatus = async (e) => {
     e.preventDefault();
@@ -188,6 +229,26 @@ export default function StatusesAndCategoriesTab() {
       setTicketStatuses((prev) => [...prev, newEntry]);
       setIsTicketModalOpen(false);
       showToast(`Ticket review status "${newEntry.name}" added.`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Delete Ticket Status
+  const handleDeleteTicketStatus = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to remove ticket status "${name}" from the database?`)) return;
+    setIsSaving(true);
+    try {
+      const updated = await settingsApi.deleteTicketStatus(id);
+      if (Array.isArray(updated)) {
+        setTicketStatuses(updated);
+      } else {
+        setTicketStatuses((prev) => prev.filter((t) => t.id !== id));
+      }
+      showToast(`Ticket status "${name}" deleted from database.`);
+    } catch (err) {
+      console.error('Error deleting ticket status:', err);
+      setTicketStatuses((prev) => prev.filter((t) => t.id !== id));
     } finally {
       setIsSaving(false);
     }
@@ -359,9 +420,21 @@ export default function StatusesAndCategoriesTab() {
                       )}
                     </td>
                     <td className="py-3.5 px-3 text-right">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                        {vs.isSystem ? 'System Core' : 'Custom'}
-                      </span>
+                      <div className="inline-flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                          {vs.isSystem ? 'System Core' : 'Custom'}
+                        </span>
+                        {!vs.isSystem && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteVehicleStatus(vs.id, vs.name)}
+                            title="Delete custom status"
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -378,7 +451,7 @@ export default function StatusesAndCategoriesTab() {
             <div>
               <h4 className="text-sm font-bold text-[#0A1E42]">Controlled Expense Categories</h4>
               <p className="text-xs text-slate-500">
-                16 controlled categories governing company expense entry, tax categorization, and approval enforcement
+                {expenseCategories.length} controlled categories governing company expense entry, tax categorization, and approval enforcement
               </p>
             </div>
             <button
@@ -426,9 +499,21 @@ export default function StatusesAndCategoriesTab() {
                       )}
                     </td>
                     <td className="py-3.5 px-3 text-right">
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {ec.status}
-                      </span>
+                      <div className="inline-flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {ec.status}
+                        </span>
+                        {ec.id && String(ec.id).startsWith('EC-') && Number(String(ec.id).replace('EC-', '')) > 1000 && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteExpenseCategory(ec.id, ec.name)}
+                            title="Delete custom category"
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -445,7 +530,7 @@ export default function StatusesAndCategoriesTab() {
             <div>
               <h4 className="text-sm font-bold text-[#0A1E42]">Controlled Ticket &amp; Violation Review Workflow</h4>
               <p className="text-xs text-slate-500">
-                Six-stage controlled lifecycle before citations can be settled or billed to driver balances
+                {ticketStatuses.length}-stage controlled lifecycle before citations can be settled or billed to driver balances
               </p>
             </div>
             <button
@@ -489,9 +574,21 @@ export default function StatusesAndCategoriesTab() {
                       )}
                     </td>
                     <td className="py-3.5 px-3 text-right">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                        Workflow Core
-                      </span>
+                      <div className="inline-flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                          {String(ts.id).startsWith('TS-') && Number(String(ts.id).replace('TS-', '')) > 1000 ? 'Custom' : 'Workflow Core'}
+                        </span>
+                        {String(ts.id).startsWith('TS-') && Number(String(ts.id).replace('TS-', '')) > 1000 && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTicketStatus(ts.id, ts.name)}
+                            title="Delete custom ticket status"
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
