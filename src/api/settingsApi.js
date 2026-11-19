@@ -83,6 +83,14 @@ export const settingsApi = {
     return res.data;
   },
 
+  async updateVehicleStatus(id, patch) {
+    const res = await request(`/settings/vehicle-statuses/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(patch)
+    });
+    return res.data;
+  },
+
   async deleteVehicleStatus(id) {
     const res = await request(`/settings/vehicle-statuses/${id}`, {
       method: 'DELETE'
@@ -98,6 +106,14 @@ export const settingsApi = {
     return res.data;
   },
 
+  async updateExpenseCategory(id, patch) {
+    const res = await request(`/settings/expense-categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(patch)
+    });
+    return res.data;
+  },
+
   async deleteExpenseCategory(id) {
     const res = await request(`/settings/expense-categories/${id}`, {
       method: 'DELETE'
@@ -109,6 +125,14 @@ export const settingsApi = {
     const res = await request('/settings/ticket-statuses', {
       method: 'POST',
       body: JSON.stringify(newItem)
+    });
+    return res.data;
+  },
+
+  async updateTicketStatus(id, patch) {
+    const res = await request(`/settings/ticket-statuses/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(patch)
     });
     return res.data;
   },

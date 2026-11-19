@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   RefreshCw,
   Trash2,
+  Edit2,
   AlertCircle
 } from 'lucide-react';
 import { settingsApi } from '../../../api/settingsApi';
@@ -15,7 +16,7 @@ import Modal from '../../../components/common/Modal';
 export default function StatusesAndCategoriesTab() {
   const [activeSection, setActiveSection] = useState('vehicles'); // vehicles | expenses | tickets
 
-  // Managed Lists State - 100% Database Driven (No Mock Data)
+  // Managed Lists State - 100% Database Driven
   const [vehicleStatuses, setVehicleStatuses] = useState([]);
   const [expenseCategories, setExpenseCategories] = useState([]);
   const [ticketStatuses, setTicketStatuses] = useState([]);
@@ -27,6 +28,9 @@ export default function StatusesAndCategoriesTab() {
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+
+  // Editing State
+  const [editingItem, setEditingItem] = useState(null); // { type: 'vehicle' | 'expense' | 'ticket', data: {...} }
 
   // Forms State
   const [newVehicleStatus, setNewVehicleStatus] = useState({
@@ -58,29 +62,29 @@ export default function StatusesAndCategoriesTab() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Load purely from Database on mount
-  useEffect(() => {
-    let isMounted = true;
-    async function loadDataFromDatabase() {
-      try {
-        setIsLoadingDb(true);
-        const data = await settingsApi.getStatusesAndCategories();
-        if (isMounted && data) {
-          setVehicleStatuses(Array.isArray(data.vehicleStatuses) ? data.vehicleStatuses : []);
-          setExpenseCategories(Array.isArray(data.expenseCategories) ? data.expenseCategories : []);
-          setTicketStatuses(Array.isArray(data.ticketStatuses) ? data.ticketStatuses : []);
-        }
-      } catch (err) {
-        console.error('Error fetching live data from database:', err);
-      } finally {
-        if (isMounted) setIsLoadingDb(false);
+  // Load purely from Database
+  const loadDataFromDatabase = async (silent = false) => {
+    try {
+      if (!silent) setIsLoadingDb(true);
+      const data = await settingsApi.getStatusesAndCategories();
+      if (data) {
+        setVehicleStatuses(Array.isArray(data.vehicleStatuses) ? data.vehicleStatuses : []);
+        setExpenseCategories(Array.isArray(data.expenseCategories) ? data.expenseCategories : []);
+        setTicketStatuses(Array.isArray(data.ticketStatuses) ? data.ticketStatuses : []);
       }
+    } catch (err) {
+      console.error('Error fetching live data from database:', err);
+      showToast('Could not reach database: ' + (err.message || 'Network error'));
+    } finally {
+      if (!silent) setIsLoadingDb(false);
     }
+  };
+
+  useEffect(() => {
     loadDataFromDatabase();
-    return () => { isMounted = false; };
   }, []);
 
-  // Add Vehicle Status directly to DB
+  // 1. Vehicle Status Handlers
   const handleAddVehicleStatus = async (e) => {
     e.preventDefault();
     if (!newVehicleStatus.name.trim()) return;
@@ -88,7 +92,7 @@ export default function StatusesAndCategoriesTab() {
       id: `VS-${Date.now()}`,
       name: newVehicleStatus.name.trim(),
       color: newVehicleStatus.color,
-      description: newVehicleStatus.description || 'Custom administrative fleet status',
+      description: newVehicleStatus.description || 'Fleet status',
       canRent: Boolean(newVehicleStatus.canRent),
       canIntake: Boolean(newVehicleStatus.canIntake),
       isSystem: false
@@ -97,11 +101,7 @@ export default function StatusesAndCategoriesTab() {
     setIsSaving(true);
     try {
       const updatedList = await settingsApi.addVehicleStatus(newEntry);
-      if (Array.isArray(updatedList)) {
-        setVehicleStatuses(updatedList);
-      } else {
-        setVehicleStatuses((prev) => [...prev, newEntry]);
-      }
+      if (Array.isArray(updatedList)) setVehicleStatuses(updatedList);
       setIsVehicleModalOpen(false);
       setNewVehicleStatus({ name: '', color: 'blue', description: '', canRent: false, canIntake: true });
       showToast(`Vehicle status "${newEntry.name}" saved to database successfully.`);
@@ -113,27 +113,37 @@ export default function StatusesAndCategoriesTab() {
     }
   };
 
-  // Delete Vehicle Status directly from DB
+  const handleUpdateVehicleStatus = async (e) => {
+    e.preventDefault();
+    if (!editingItem?.data?.id) return;
+    setIsSaving(true);
+    try {
+      const updatedList = await settingsApi.updateVehicleStatus(editingItem.data.id, editingItem.data);
+      if (Array.isArray(updatedList)) setVehicleStatuses(updatedList);
+      setEditingItem(null);
+      showToast(`Vehicle status updated in database successfully.`);
+    } catch (err) {
+      showToast(`Error: ${err.message || 'Could not update'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDeleteVehicleStatus = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to remove status "${name}" from the database?`)) return;
+    if (!window.confirm(`Are you sure you want to delete status "${name}" from the database?`)) return;
     setIsSaving(true);
     try {
       const updated = await settingsApi.deleteVehicleStatus(id);
-      if (Array.isArray(updated)) {
-        setVehicleStatuses(updated);
-      } else {
-        setVehicleStatuses((prev) => prev.filter((v) => v.id !== id));
-      }
+      if (Array.isArray(updated)) setVehicleStatuses(updated);
       showToast(`Vehicle status "${name}" deleted from database.`);
     } catch (err) {
-      console.error('Error deleting vehicle status:', err);
       showToast(`Error: ${err.message || 'Could not delete from database'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Add Expense Category directly to DB
+  // 2. Expense Category Handlers
   const handleAddExpenseCategory = async (e) => {
     e.preventDefault();
     if (!newExpenseCategory.name.trim()) return;
@@ -150,43 +160,48 @@ export default function StatusesAndCategoriesTab() {
     setIsSaving(true);
     try {
       const updatedList = await settingsApi.addExpenseCategory(newEntry);
-      if (Array.isArray(updatedList)) {
-        setExpenseCategories(updatedList);
-      } else {
-        setExpenseCategories((prev) => [...prev, newEntry]);
-      }
+      if (Array.isArray(updatedList)) setExpenseCategories(updatedList);
       setIsExpenseModalOpen(false);
       setNewExpenseCategory({ code: '', name: '', taxDeductible: true, requiresApproval: true });
       showToast(`Expense category "${newEntry.name}" saved to database successfully.`);
     } catch (err) {
-      console.error('Error adding expense category:', err);
       showToast(`Error: ${err.message || 'Could not save to database'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Delete Expense Category directly from DB
+  const handleUpdateExpenseCategory = async (e) => {
+    e.preventDefault();
+    if (!editingItem?.data?.id) return;
+    setIsSaving(true);
+    try {
+      const updatedList = await settingsApi.updateExpenseCategory(editingItem.data.id, editingItem.data);
+      if (Array.isArray(updatedList)) setExpenseCategories(updatedList);
+      setEditingItem(null);
+      showToast(`Expense category updated in database successfully.`);
+    } catch (err) {
+      showToast(`Error: ${err.message || 'Could not update'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDeleteExpenseCategory = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to remove category "${name}" from the database?`)) return;
+    if (!window.confirm(`Are you sure you want to delete category "${name}" from the database?`)) return;
     setIsSaving(true);
     try {
       const updated = await settingsApi.deleteExpenseCategory(id);
-      if (Array.isArray(updated)) {
-        setExpenseCategories(updated);
-      } else {
-        setExpenseCategories((prev) => prev.filter((c) => c.id !== id && c.code !== id));
-      }
+      if (Array.isArray(updated)) setExpenseCategories(updated);
       showToast(`Expense category "${name}" deleted from database.`);
     } catch (err) {
-      console.error('Error deleting expense category:', err);
       showToast(`Error: ${err.message || 'Could not delete from database'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Add Ticket Status directly to DB
+  // 3. Ticket Status Handlers
   const handleAddTicketStatus = async (e) => {
     e.preventDefault();
     if (!newTicketStatus.name.trim()) return;
@@ -195,42 +210,47 @@ export default function StatusesAndCategoriesTab() {
       name: newTicketStatus.name.trim(),
       stage: newTicketStatus.stage,
       chargeable: newTicketStatus.chargeable,
-      description: newTicketStatus.description || 'Custom citation review state'
+      description: newTicketStatus.description || 'Citation review state'
     };
 
     setIsSaving(true);
     try {
       const updatedList = await settingsApi.addTicketStatus(newEntry);
-      if (Array.isArray(updatedList)) {
-        setTicketStatuses(updatedList);
-      } else {
-        setTicketStatuses((prev) => [...prev, newEntry]);
-      }
+      if (Array.isArray(updatedList)) setTicketStatuses(updatedList);
       setIsTicketModalOpen(false);
       setNewTicketStatus({ name: '', stage: 'Review', chargeable: false, description: '' });
       showToast(`Ticket review status "${newEntry.name}" saved to database successfully.`);
     } catch (err) {
-      console.error('Error adding ticket status:', err);
       showToast(`Error: ${err.message || 'Could not save to database'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Delete Ticket Status directly from DB
+  const handleUpdateTicketStatus = async (e) => {
+    e.preventDefault();
+    if (!editingItem?.data?.id) return;
+    setIsSaving(true);
+    try {
+      const updatedList = await settingsApi.updateTicketStatus(editingItem.data.id, editingItem.data);
+      if (Array.isArray(updatedList)) setTicketStatuses(updatedList);
+      setEditingItem(null);
+      showToast(`Ticket status updated in database successfully.`);
+    } catch (err) {
+      showToast(`Error: ${err.message || 'Could not update'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDeleteTicketStatus = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to remove ticket status "${name}" from the database?`)) return;
+    if (!window.confirm(`Are you sure you want to delete ticket status "${name}" from the database?`)) return;
     setIsSaving(true);
     try {
       const updated = await settingsApi.deleteTicketStatus(id);
-      if (Array.isArray(updated)) {
-        setTicketStatuses(updated);
-      } else {
-        setTicketStatuses((prev) => prev.filter((t) => t.id !== id));
-      }
+      if (Array.isArray(updated)) setTicketStatuses(updated);
       showToast(`Ticket status "${name}" deleted from database.`);
     } catch (err) {
-      console.error('Error deleting ticket status:', err);
       showToast(`Error: ${err.message || 'Could not delete from database'}`);
     } finally {
       setIsSaving(false);
@@ -276,22 +296,28 @@ export default function StatusesAndCategoriesTab() {
       {/* Navigation Sub-Tabs & Live DB Status */}
       <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-[0_2px_12px_rgba(7,29,73,0.04)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <h3 className="text-base font-bold text-[#0A1E42] flex items-center gap-2">
               <Tags className="w-4 h-4 text-[#075EE8]" /> Admin-Managed Statuses &amp; Controlled Categories
             </h3>
             {isLoadingDb ? (
-              <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
+              <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
                 <RefreshCw className="w-3 h-3 animate-spin text-[#075EE8]" /> Loading from Database...
               </span>
             ) : (
-              <span className="text-[11px] text-emerald-600 flex items-center gap-1 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <button
+                type="button"
+                onClick={() => loadDataFromDatabase()}
+                title="Click to reload live from MySQL Database"
+                className="text-[11px] text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 font-semibold bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-200 transition-colors cursor-pointer"
+              >
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Database Live Sync Active
-              </span>
+                <RefreshCw className="w-2.5 h-2.5 text-emerald-500 opacity-60 ml-0.5" />
+              </button>
             )}
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Maintain controlled system classifications for vehicles, accounting expenses, and traffic citations
+            Maintain controlled system classifications for vehicles, accounting expenses, and traffic citations (100% MySQL Database Connected)
           </p>
         </div>
 
@@ -367,7 +393,7 @@ export default function StatusesAndCategoriesTab() {
                   <th className="py-3 px-3">Operational Scope &amp; Description</th>
                   <th className="py-3 px-3 text-center">Rental Eligible</th>
                   <th className="py-3 px-3 text-center">Intake Ready</th>
-                  <th className="py-3 px-3 text-right">Scope</th>
+                  <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -381,7 +407,7 @@ export default function StatusesAndCategoriesTab() {
                 ) : vehicleStatuses.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400">
-                      No vehicle statuses found in database. Click "Add Vehicle Status" above to create one.
+                      No vehicle statuses in database. Click "Add Vehicle Status" above to create one.
                     </td>
                   </tr>
                 ) : (
@@ -417,20 +443,23 @@ export default function StatusesAndCategoriesTab() {
                         )}
                       </td>
                       <td className="py-3.5 px-3 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                            {vs.isSystem ? 'System Core' : 'Custom'}
-                          </span>
-                          {!vs.isSystem && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteVehicleStatus(vs.id, vs.name)}
-                              title="Delete from database"
-                              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                        <div className="inline-flex items-center gap-1 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem({ type: 'vehicle', data: { ...vs } })}
+                            title="Edit in database"
+                            className="p-1 text-slate-400 hover:text-[#075EE8] rounded transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteVehicleStatus(vs.id, vs.name)}
+                            title="Delete from database"
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -449,7 +478,7 @@ export default function StatusesAndCategoriesTab() {
             <div>
               <h4 className="text-sm font-bold text-[#0A1E42]">Controlled Expense Categories</h4>
               <p className="text-xs text-slate-500">
-                {expenseCategories.length} database-controlled categories governing company expense entry, tax categorization, and approval enforcement
+                {expenseCategories.length} database-controlled categories governing company expense entry
               </p>
             </div>
             <button
@@ -470,7 +499,7 @@ export default function StatusesAndCategoriesTab() {
                   <th className="py-3 px-3">Category Name</th>
                   <th className="py-3 px-3 text-center">Tax Deductible</th>
                   <th className="py-3 px-3 text-center">Manager Approval Required</th>
-                  <th className="py-3 px-3 text-right">Lifecycle Status</th>
+                  <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -484,7 +513,7 @@ export default function StatusesAndCategoriesTab() {
                 ) : expenseCategories.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-slate-400">
-                      No expense categories found in database. Click "Add Category" to create one.
+                      No expense categories in database. Click "Add Category" to create one.
                     </td>
                   </tr>
                 ) : (
@@ -511,20 +540,23 @@ export default function StatusesAndCategoriesTab() {
                         )}
                       </td>
                       <td className="py-3.5 px-3 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            {ec.status || 'Active'}
-                          </span>
-                          {ec.id && String(ec.id).startsWith('EC-') && Number(String(ec.id).replace('EC-', '')) > 1000 && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteExpenseCategory(ec.id, ec.name)}
-                              title="Delete from database"
-                              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                        <div className="inline-flex items-center gap-1 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem({ type: 'expense', data: { ...ec } })}
+                            title="Edit in database"
+                            className="p-1 text-slate-400 hover:text-[#075EE8] rounded transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteExpenseCategory(ec.id, ec.name)}
+                            title="Delete from database"
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -564,7 +596,7 @@ export default function StatusesAndCategoriesTab() {
                   <th className="py-3 px-3">Workflow Stage</th>
                   <th className="py-3 px-3">Audit Scope &amp; Processing Rules</th>
                   <th className="py-3 px-3 text-center">Driver Chargeable</th>
-                  <th className="py-3 px-3 text-right">Type</th>
+                  <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -578,7 +610,7 @@ export default function StatusesAndCategoriesTab() {
                 ) : ticketStatuses.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-slate-400">
-                      No ticket statuses found in database. Click "Add Ticket Status" to create one.
+                      No ticket statuses in database. Click "Add Ticket Status" to create one.
                     </td>
                   </tr>
                 ) : (
@@ -601,20 +633,23 @@ export default function StatusesAndCategoriesTab() {
                         )}
                       </td>
                       <td className="py-3.5 px-3 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                            {String(ts.id).startsWith('TS-') && Number(String(ts.id).replace('TS-', '')) > 1000 ? 'Custom' : 'Workflow Core'}
-                          </span>
-                          {String(ts.id).startsWith('TS-') && Number(String(ts.id).replace('TS-', '')) > 1000 && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteTicketStatus(ts.id, ts.name)}
-                              title="Delete from database"
-                              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                        <div className="inline-flex items-center gap-1 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem({ type: 'ticket', data: { ...ts } })}
+                            title="Edit in database"
+                            className="p-1 text-slate-400 hover:text-[#075EE8] rounded transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTicketStatus(ts.id, ts.name)}
+                            title="Delete from database"
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -626,12 +661,12 @@ export default function StatusesAndCategoriesTab() {
         </div>
       )}
 
-      {/* Modal 1: Add Vehicle Status */}
+      {/* Modal: Add Vehicle Status */}
       <Modal
         isOpen={isVehicleModalOpen}
         onClose={() => setIsVehicleModalOpen(false)}
         title="Add Vehicle Fleet Status"
-        subtitle="Introduce an administrative operational state for fleet inventory tracking"
+        subtitle="Introduce an operational state directly into the MySQL database"
         maxWidth="max-w-md"
       >
         <form onSubmit={handleAddVehicleStatus} className="p-6 space-y-4">
@@ -716,12 +751,12 @@ export default function StatusesAndCategoriesTab() {
         </form>
       </Modal>
 
-      {/* Modal 2: Add Expense Category */}
+      {/* Modal: Add Expense Category */}
       <Modal
         isOpen={isExpenseModalOpen}
         onClose={() => setIsExpenseModalOpen(false)}
         title="Add Expense Category"
-        subtitle="Define GL classification and managerial review rules"
+        subtitle="Save GL classification directly to MySQL database"
         maxWidth="max-w-md"
       >
         <form onSubmit={handleAddExpenseCategory} className="p-6 space-y-4">
@@ -790,12 +825,12 @@ export default function StatusesAndCategoriesTab() {
         </form>
       </Modal>
 
-      {/* Modal 3: Add Ticket Status */}
+      {/* Modal: Add Ticket Status */}
       <Modal
         isOpen={isTicketModalOpen}
         onClose={() => setIsTicketModalOpen(false)}
         title="Add Ticket Workflow Status"
-        subtitle="Configure citation processing lifecycle state"
+        subtitle="Save citation lifecycle state directly to MySQL database"
         maxWidth="max-w-md"
       >
         <form onSubmit={handleAddTicketStatus} className="p-6 space-y-4">
@@ -868,6 +903,165 @@ export default function StatusesAndCategoriesTab() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal: Edit Item in Database */}
+      <Modal
+        isOpen={Boolean(editingItem)}
+        onClose={() => setEditingItem(null)}
+        title={`Edit ${editingItem?.type === 'vehicle' ? 'Vehicle Status' : editingItem?.type === 'expense' ? 'Expense Category' : 'Ticket Status'}`}
+        subtitle="Update record values directly in MySQL database"
+        maxWidth="max-w-md"
+      >
+        {editingItem?.type === 'vehicle' && (
+          <form onSubmit={handleUpdateVehicleStatus} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Status Name *</label>
+              <input
+                type="text"
+                required
+                value={editingItem.data.name || ''}
+                onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, name: e.target.value } }))}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Color Palette</label>
+              <select
+                value={editingItem.data.color || 'blue'}
+                onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, color: e.target.value } }))}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white"
+              >
+                <option value="emerald">Emerald Green (Operational)</option>
+                <option value="blue">Blue (Reserved / Transit)</option>
+                <option value="indigo">Indigo (Commercial Deployment)</option>
+                <option value="amber">Amber (Maintenance Warning)</option>
+                <option value="rose">Rose Red (Unavailable / Blocked)</option>
+                <option value="slate">Slate Gray (Decommissioned)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Description</label>
+              <textarea
+                rows={2}
+                value={editingItem.data.description || ''}
+                onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, description: e.target.value } }))}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setEditingItem(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-4 py-2 bg-[#075EE8] text-white text-xs font-bold rounded-xl shadow-sm"
+              >
+                Save Changes to DB
+              </button>
+            </div>
+          </form>
+        )}
+
+        {editingItem?.type === 'expense' && (
+          <form onSubmit={handleUpdateExpenseCategory} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Category Name *</label>
+              <input
+                type="text"
+                required
+                value={editingItem.data.name || ''}
+                onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, name: e.target.value } }))}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">GL Account Code</label>
+              <input
+                type="text"
+                value={editingItem.data.code || ''}
+                onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, code: e.target.value } }))}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl font-mono uppercase"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setEditingItem(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-4 py-2 bg-[#075EE8] text-white text-xs font-bold rounded-xl shadow-sm"
+              >
+                Save Changes to DB
+              </button>
+            </div>
+          </form>
+        )}
+
+        {editingItem?.type === 'ticket' && (
+          <form onSubmit={handleUpdateTicketStatus} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Status Title *</label>
+              <input
+                type="text"
+                required
+                value={editingItem.data.name || ''}
+                onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, name: e.target.value } }))}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Workflow Stage</label>
+              <select
+                value={editingItem.data.stage || 'Review'}
+                onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, stage: e.target.value } }))}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white"
+              >
+                <option value="Intake">Intake (Imported from Tag)</option>
+                <option value="Review">Review (Telematics Audit)</option>
+                <option value="Matched">Matched (Associated to Driver)</option>
+                <option value="Billing">Billing (Charged to Balance)</option>
+                <option value="Settled">Settled (Fine Paid)</option>
+                <option value="Adjudication">Adjudication (Legal Appeal)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Scope Description</label>
+              <textarea
+                rows={2}
+                value={editingItem.data.description || ''}
+                onChange={(e) => setEditingItem((p) => ({ ...p, data: { ...p.data, description: e.target.value } }))}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setEditingItem(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-4 py-2 bg-[#075EE8] text-white text-xs font-bold rounded-xl shadow-sm"
+              >
+                Save Changes to DB
+              </button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );
