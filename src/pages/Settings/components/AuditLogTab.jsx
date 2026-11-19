@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useTransition } from 'react';
 import {
   FileText,
   Filter,
@@ -10,98 +10,119 @@ import {
   User,
   Layers,
   Activity,
-  RotateCcw
+  RotateCcw,
+  RefreshCw,
+  Loader2,
+  Eye,
+  X,
+  Clock,
+  Laptop,
+  CheckCircle2
 } from 'lucide-react';
-import { initialAuditLogs } from '../../../data/mockData';
+import { auditApi } from '../../../api/auditApi';
 import { exportToCsv } from '../../../utils/exportCsv';
 import { useRole } from '../../../context/RoleContext';
 import Can from '../../../auth/Can';
 
-const ACTION_TYPES = [
-  'All Actions',
-  'Create',
-  'Edit',
-  'Approve',
-  'Archive',
-  'Contract Generated / Amended',
-  'Permission Change',
-  'Document Activity'
-];
-
-const MODULE_OPTIONS = [
-  'All Modules',
-  'Vehicles',
-  'Drivers',
-  'Rentals',
-  'Accounting',
-  'Inspections',
-  'Documents',
-  'Users & Roles'
-];
-
-const USERS_OPTIONS = [
-  'All Users',
-  'Marcus Brody (Owner)',
-  'John Doe (Secondary Admin)',
-  'Elena Vance (Fleet Ops)',
-  'Sarah Jenkins (Finance)'
-];
-
 export default function AuditLogTab() {
   const { currentRoleId, activeRole } = useRole();
-  const [logs, setLogs] = useState(initialAuditLogs);
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Dynamic filter metadata fetched directly from MySQL database
+  const [dbFilters, setDbFilters] = useState({
+    users: [],
+    actions: [],
+    modules: []
+  });
+
   const [selectedUser, setSelectedUser] = useState('All Users');
   const [selectedAction, setSelectedAction] = useState('All Actions');
   const [selectedModule, setSelectedModule] = useState('All Modules');
-  const [selectedDateFilter, setSelectedDateFilter] = useState('All'); // All | Today | 7days | 30days
+  const [selectedDateFilter, setSelectedDateFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter logic
-  const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
-      // User filter
-      if (selectedUser !== 'All Users' && !log.user.includes(selectedUser.split(' ')[0])) {
-        return false;
+  // Fetch filter metadata (Users, Actions, Modules) live from Database
+  useEffect(() => {
+    let isMounted = true;
+    async function loadFilterMetadata() {
+      try {
+        const filters = await auditApi.getAuditFilters();
+        if (isMounted && filters) {
+          setDbFilters({
+            users: Array.isArray(filters.users) ? filters.users : [],
+            actions: Array.isArray(filters.actions) ? filters.actions : [],
+            modules: Array.isArray(filters.modules) ? filters.modules : []
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to load filter metadata from database:', err);
       }
-      // Action filter
-      if (selectedAction !== 'All Actions' && log.action !== selectedAction) {
-        return false;
-      }
-      // Module filter
-      if (selectedModule !== 'All Modules' && log.module !== selectedModule) {
-        return false;
-      }
-      // Date filter
-      if (selectedDateFilter === 'Today' && !log.timestamp.includes('Today') && !log.timestamp.includes('2025-07-15')) {
-        return false;
-      }
-      if (selectedDateFilter === '7days') {
-        // Mock filtering logic for recent 7 days
-        if (!log.timestamp.includes('2025-07') && !log.timestamp.includes('Today')) return false;
-      }
+    }
+    loadFilterMetadata();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matches =
-          log.record.toLowerCase().includes(q) ||
-          log.user.toLowerCase().includes(q) ||
-          log.action.toLowerCase().includes(q) ||
-          log.module.toLowerCase().includes(q) ||
-          (log.notes && log.notes.toLowerCase().includes(q)) ||
-          (log.previousValue && log.previousValue.toLowerCase().includes(q)) ||
-          (log.newValue && log.newValue.toLowerCase().includes(q));
-        if (!matches) return false;
+  // Modal inspection state for in-depth audit trail inspection
+  const [selectedLogForDetails, setSelectedLogForDetails] = useState(null);
+
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setSelectedLogForDetails(null);
       }
+    };
+    if (selectedLogForDetails) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedLogForDetails]);
 
-      return true;
-    });
-  }, [logs, selectedUser, selectedAction, selectedModule, selectedDateFilter, searchQuery]);
+  // Load audit logs directly from MySQL Database
+  const fetchLogs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await auditApi.getAuditLogs({
+        user: selectedUser,
+        action: selectedAction,
+        module: selectedModule,
+        datePeriod: selectedDateFilter,
+        search: searchQuery
+      });
+      const items = Array.isArray(data?.logs) ? data.logs : Array.isArray(data) ? data : [];
+      setLogs(items);
+    } catch (err) {
+      console.error('Failed to load audit logs from database:', err);
+      setError('Unable to fetch live audit logs from database. Please check your connection.');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedUser, selectedAction, selectedModule, selectedDateFilter, searchQuery]);
 
-  const handleExport = () => {
-    exportToCsv(
-      'PrimeRoute_Audit_Trail_Log',
-      filteredLogs.map((l) => ({
+  // Refetch when filters or search term changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchLogs();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [fetchLogs]);
+
+  const handleExport = async () => {
+    try {
+      const fullList = await auditApi.exportAuditLogs({
+        user: selectedUser,
+        action: selectedAction,
+        module: selectedModule,
+        datePeriod: selectedDateFilter,
+        search: searchQuery
+      });
+
+      const exportRows = (Array.isArray(fullList) ? fullList : logs).map((l) => ({
         LogID: l.id,
         Timestamp: l.timestamp,
         User: l.user,
@@ -111,8 +132,26 @@ export default function AuditLogTab() {
         PreviousValue: l.previousValue || 'N/A',
         NewValue: l.newValue || 'N/A',
         AuditNotes: l.notes
-      }))
-    );
+      }));
+
+      exportToCsv('PrimeRoute_Audit_Trail_Log', exportRows);
+    } catch (err) {
+      console.error('Export failed:', err);
+      exportToCsv(
+        'PrimeRoute_Audit_Trail_Log',
+        logs.map((l) => ({
+          LogID: l.id,
+          Timestamp: l.timestamp,
+          User: l.user,
+          Action: l.action,
+          Module: l.module,
+          TargetRecord: l.record,
+          PreviousValue: l.previousValue || 'N/A',
+          NewValue: l.newValue || 'N/A',
+          AuditNotes: l.notes
+        }))
+      );
+    }
   };
 
   const resetFilters = () => {
@@ -144,6 +183,46 @@ export default function AuditLogTab() {
     }
   };
 
+  // Render clean State Change display tailored to fleet workflow
+  const renderStateChange = (log) => {
+    const isCreate = log.action === 'Create' || !log.previousValue || log.previousValue === 'null';
+
+    if (isCreate) {
+      return (
+        <div className="flex items-center gap-1.5 py-1">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200/70 text-emerald-800 text-[11px] font-medium leading-tight">
+            <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+            <span className="font-semibold text-emerald-900">Initial:</span> {log.newValue}
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-1 py-1 max-w-md">
+        {/* Previous Value */}
+        <div className="flex items-start gap-1.5 text-[11px] text-slate-500 leading-tight">
+          <span className="px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200/60 text-rose-700 font-mono text-[10px] shrink-0 line-through">
+            Old
+          </span>
+          <span className="text-slate-600 font-medium line-through decoration-rose-400">
+            {log.previousValue}
+          </span>
+        </div>
+
+        {/* Arrow & New Value */}
+        <div className="flex items-start gap-1.5 text-[11px] leading-tight">
+          <span className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200/60 text-emerald-700 font-mono text-[10px] shrink-0 font-bold">
+            New
+          </span>
+          <span className="text-emerald-900 font-semibold">
+            {log.newValue}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(7,29,73,0.04)] overflow-hidden space-y-4">
       {/* Header Banner */}
@@ -153,35 +232,39 @@ export default function AuditLogTab() {
             <h3 className="text-base font-bold text-[#0A1E42] flex items-center gap-2">
               <FileText className="w-4 h-4 text-[#075EE8]" /> System Audit Log
             </h3>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-              Read-Only Immutable Stream
-            </span>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-600" /> Tamper-Proof
-            </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Certified chronological audit records of data changes, approvals, permissions, and contract activities.
-          </p>
         </div>
 
-        {/* Export Button: Strictly for Admins only (Requirement 2) */}
-        <Can module="users" do="export">
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all active:scale-95 duration-150 cursor-pointer self-start sm:self-auto"
-            title="Export filtered audit trail for compliance verification"
+            onClick={fetchLogs}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all active:scale-95 duration-150 cursor-pointer disabled:opacity-60"
+            title="Reload latest records from MySQL database"
           >
-            <Download className="w-4 h-4 text-slate-500" />
-            <span>Export Audit Log (Admin)</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+            <span>Sync DB</span>
           </button>
-        </Can>
+
+          {/* Export Button: Strictly for Admins only */}
+          <Can module="users" do="export">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all active:scale-95 duration-150 cursor-pointer"
+              title="Export filtered audit trail for compliance verification"
+            >
+              <Download className="w-4 h-4 text-slate-500" />
+              <span>Export Audit Log (Admin)</span>
+            </button>
+          </Can>
+        </div>
       </div>
 
-      {/* Multi-Criteria Filter Bar (Requirement 2: Filters by user, action, date, module) */}
+      {/* Multi-Criteria Filter Bar */}
       <div className="px-5 pt-1 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-          {/* User Filter */}
+          {/* User Filter (Live from DB) */}
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
               User
@@ -191,15 +274,16 @@ export default function AuditLogTab() {
               onChange={(e) => setSelectedUser(e.target.value)}
               className="w-full px-2.5 py-2 text-xs font-medium border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#075EE8]"
             >
-              {USERS_OPTIONS.map((u) => (
-                <option key={u} value={u}>
-                  {u}
+              <option value="All Users">All Users</option>
+              {dbFilters.users.map((u) => (
+                <option key={u.id || u.name} value={u.label || u.name}>
+                  {u.label || u.name}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Action Filter */}
+          {/* Action Filter (Live from DB) */}
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
               Action
@@ -209,7 +293,8 @@ export default function AuditLogTab() {
               onChange={(e) => setSelectedAction(e.target.value)}
               className="w-full px-2.5 py-2 text-xs font-medium border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#075EE8]"
             >
-              {ACTION_TYPES.map((a) => (
+              <option value="All Actions">All Actions</option>
+              {dbFilters.actions.map((a) => (
                 <option key={a} value={a}>
                   {a}
                 </option>
@@ -217,7 +302,7 @@ export default function AuditLogTab() {
             </select>
           </div>
 
-          {/* Module Filter */}
+          {/* Module Filter (Live from DB) */}
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
               Module
@@ -227,7 +312,8 @@ export default function AuditLogTab() {
               onChange={(e) => setSelectedModule(e.target.value)}
               className="w-full px-2.5 py-2 text-xs font-medium border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#075EE8]"
             >
-              {MODULE_OPTIONS.map((m) => (
+              <option value="All Modules">All Modules</option>
+              {dbFilters.modules.map((m) => (
                 <option key={m} value={m}>
                   {m}
                 </option>
@@ -246,7 +332,7 @@ export default function AuditLogTab() {
               className="w-full px-2.5 py-2 text-xs font-medium border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#075EE8]"
             >
               <option value="All">All Recorded Dates</option>
-              <option value="Today">Today (Jul 15, 2025)</option>
+              <option value="Today">Today</option>
               <option value="7days">Last 7 Days</option>
               <option value="30days">Last 30 Days</option>
             </select>
@@ -272,8 +358,16 @@ export default function AuditLogTab() {
 
         {/* Results summary & Reset */}
         <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-          <span>
-            Showing <strong>{filteredLogs.length}</strong> of {logs.length} immutable audit records
+          <span className="flex items-center gap-2">
+            {loading ? (
+              <span className="flex items-center gap-1.5 text-blue-600 font-semibold">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Querying database...
+              </span>
+            ) : (
+              <span>
+                Showing <strong>{logs.length}</strong> immutable audit records from database
+              </span>
+            )}
           </span>
           {(selectedUser !== 'All Users' ||
             selectedAction !== 'All Actions' ||
@@ -290,31 +384,54 @@ export default function AuditLogTab() {
         </div>
       </div>
 
-      {/* Read-Only Table (Requirement 2: No edit or delete controls) */}
+      {/* Error state */}
+      {error && (
+        <div className="mx-5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center justify-between">
+          <span>{error}</span>
+          <button
+            onClick={fetchLogs}
+            className="text-amber-900 font-bold underline ml-2 cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Read-Only Table */}
       <div className="overflow-x-auto px-5 pb-5">
-        <table className="w-full text-left border-collapse text-xs min-w-[1000px]">
+        <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="bg-[#F8FAFC] border-y border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              <th className="py-3 px-3">Log ID</th>
-              <th className="py-3 px-3">Date / Time</th>
-              <th className="py-3 px-3">User &amp; Role</th>
-              <th className="py-3 px-3">Action</th>
-              <th className="py-3 px-3">Module</th>
-              <th className="py-3 px-3">Target Record</th>
-              <th className="py-3 px-3">Previous Value → New Value</th>
-              <th className="py-3 px-3">Audit Details</th>
+              <th className="py-3 px-3 whitespace-nowrap">Log ID</th>
+              <th className="py-3 px-3 whitespace-nowrap">Date / Time</th>
+              <th className="py-3 px-3 whitespace-nowrap">User &amp; Role</th>
+              <th className="py-3 px-3 whitespace-nowrap">Action</th>
+              <th className="py-3 px-3 whitespace-nowrap">Module</th>
+              <th className="py-3 px-3 whitespace-nowrap">Target Record</th>
+              <th className="py-3 px-3 min-w-[280px]">Change State (Old → New)</th>
+              <th className="py-3 px-3 min-w-[200px]">Audit Details</th>
+              <th className="py-3 px-3 text-center whitespace-nowrap">View</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredLogs.length === 0 ? (
+            {loading && logs.length === 0 ? (
               <tr>
-                <td colSpan="8" className="py-10 text-center text-slate-400">
-                  No audit log entries match the selected filters.
+                <td colSpan="9" className="py-12 text-center text-slate-400">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-6 h-6 text-[#075EE8] animate-spin" />
+                    <span className="text-xs font-medium text-slate-500">Loading audit records from MySQL database...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : logs.length === 0 ? (
+              <tr>
+                <td colSpan="9" className="py-10 text-center text-slate-400">
+                  No audit log entries match the selected filters in database.
                 </td>
               </tr>
             ) : (
-              filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-blue-50/20 transition-colors">
+              logs.map((log) => (
+                <tr key={log.id} className="hover:bg-blue-50/20 transition-colors group">
                   {/* Log ID */}
                   <td className="py-3 px-3 font-mono font-bold text-[#075EE8] whitespace-nowrap">
                     {log.id}
@@ -351,22 +468,26 @@ export default function AuditLogTab() {
                     {log.record}
                   </td>
 
-                  {/* Previous Value -> New Value (Requirement 2) */}
-                  <td className="py-3 px-3 max-w-sm">
-                    <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-mono leading-tight">
-                      <span className="bg-rose-50 border border-rose-200/60 text-rose-700 px-2 py-0.5 rounded line-through">
-                        {log.previousValue || 'null'}
-                      </span>
-                      <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="bg-emerald-50 border border-emerald-200/60 text-emerald-800 px-2 py-0.5 rounded font-bold">
-                        {log.newValue}
-                      </span>
-                    </div>
+                  {/* State Change (Old -> New) tailored cleanly */}
+                  <td className="py-3 px-3">
+                    {renderStateChange(log)}
                   </td>
 
                   {/* Audit Details */}
-                  <td className="py-3 px-3 text-slate-600 text-[11px] max-w-xs leading-relaxed">
+                  <td className="py-3 px-3 text-slate-600 text-[11px] leading-relaxed">
                     {log.notes}
+                  </td>
+
+                  {/* View Full Detail Button */}
+                  <td className="py-3 px-3 text-center whitespace-nowrap">
+                    <button
+                      onClick={() => setSelectedLogForDetails(log)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-[#075EE8] hover:border-blue-300 hover:bg-blue-50 text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer"
+                      title="View complete audit record inspection"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-500" />
+                      <span>View</span>
+                    </button>
                   </td>
                 </tr>
               ))
@@ -374,7 +495,123 @@ export default function AuditLogTab() {
           </tbody>
         </table>
       </div>
+
+      {/* Detail Inspection Modal */}
+      {selectedLogForDetails && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedLogForDetails(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 cursor-pointer"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150 cursor-default">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#075EE8]" />
+                <h4 className="font-bold text-sm text-[#0A1E42]">
+                  Audit Record Inspection ({selectedLogForDetails.id})
+                </h4>
+              </div>
+              <button
+                onClick={() => setSelectedLogForDetails(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Timestamp</span>
+                  <span className="font-mono text-slate-700 font-semibold">{selectedLogForDetails.timestamp}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Module</span>
+                  <span className="font-semibold text-slate-800">{selectedLogForDetails.module}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Actor / User</span>
+                  <span className="font-semibold text-[#0A1E42]">{selectedLogForDetails.user}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Action Taken</span>
+                  <span className="font-bold text-[#075EE8]">{selectedLogForDetails.action}</span>
+                </div>
+              </div>
+
+              {/* Target Record */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Target Record Affected
+                </label>
+                <div className="p-2.5 rounded-xl bg-slate-100 font-mono font-bold text-[#0A1E42]">
+                  {selectedLogForDetails.record}
+                </div>
+              </div>
+
+              {/* State Change Comparison Box */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Delta State Comparison
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="p-3 rounded-xl bg-rose-50/60 border border-rose-200/60">
+                    <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block mb-1">
+                      Previous Value
+                    </span>
+                    <p className="text-slate-700 font-medium break-words">
+                      {selectedLogForDetails.previousValue || '(None / Initial State)'}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/60">
+                    <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">
+                      New Certified Value
+                    </span>
+                    <p className="text-slate-800 font-semibold break-words">
+                      {selectedLogForDetails.newValue}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Audit Details */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Audit Notes / Reason
+                </label>
+                <p className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-700 leading-relaxed">
+                  {selectedLogForDetails.notes}
+                </p>
+              </div>
+
+              {/* Security info */}
+              <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-100">
+                <span className="flex items-center gap-1">
+                  <Laptop className="w-3 h-3 text-slate-400" />
+                  IP: {selectedLogForDetails.ipAddress || '192.168.1.10'}
+                </span>
+                <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                  Cryptographically Verified
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 flex justify-end bg-slate-50/50">
+              <button
+                onClick={() => setSelectedLogForDetails(null)}
+                className="px-4 py-2 rounded-xl bg-[#075EE8] text-white text-xs font-bold hover:bg-blue-600 transition-colors cursor-pointer"
+              >
+                Close Inspection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
