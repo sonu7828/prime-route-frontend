@@ -76,71 +76,71 @@ export const settingsApi = {
   },
 
   async addVehicleStatus(newItem) {
-    const res = await request('/settings/vehicle-statuses', {
-      method: 'POST',
-      body: JSON.stringify(newItem)
-    });
-    return res.data;
+    const current = await this.getStatusesAndCategories();
+    const updatedList = [...(current.vehicleStatuses || []), newItem];
+    const res = await this.updateStatusesAndCategories({ ...current, vehicleStatuses: updatedList });
+    return res?.vehicleStatuses || updatedList;
   },
 
   async updateVehicleStatus(id, patch) {
-    const res = await request(`/settings/vehicle-statuses/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(patch)
-    });
-    return res.data;
+    const current = await this.getStatusesAndCategories();
+    const updatedList = (current.vehicleStatuses || []).map((v) =>
+      v.id === id ? { ...v, ...patch } : v
+    );
+    const res = await this.updateStatusesAndCategories({ ...current, vehicleStatuses: updatedList });
+    return res?.vehicleStatuses || updatedList;
   },
 
   async deleteVehicleStatus(id) {
-    const res = await request(`/settings/vehicle-statuses/${id}`, {
-      method: 'DELETE'
-    });
-    return res.data;
+    const current = await this.getStatusesAndCategories();
+    const updatedList = (current.vehicleStatuses || []).filter((v) => v.id !== id);
+    const res = await this.updateStatusesAndCategories({ ...current, vehicleStatuses: updatedList });
+    return res?.vehicleStatuses || updatedList;
   },
 
   async addExpenseCategory(newItem) {
-    const res = await request('/settings/expense-categories', {
-      method: 'POST',
-      body: JSON.stringify(newItem)
-    });
-    return res.data;
+    const current = await this.getStatusesAndCategories();
+    const updatedList = [...(current.expenseCategories || []), newItem];
+    const res = await this.updateStatusesAndCategories({ ...current, expenseCategories: updatedList });
+    return res?.expenseCategories || updatedList;
   },
 
   async updateExpenseCategory(id, patch) {
-    const res = await request(`/settings/expense-categories/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(patch)
-    });
-    return res.data;
+    const current = await this.getStatusesAndCategories();
+    const updatedList = (current.expenseCategories || []).map((e) =>
+      e.id === id || e.code === id ? { ...e, ...patch } : e
+    );
+    const res = await this.updateStatusesAndCategories({ ...current, expenseCategories: updatedList });
+    return res?.expenseCategories || updatedList;
   },
 
   async deleteExpenseCategory(id) {
-    const res = await request(`/settings/expense-categories/${id}`, {
-      method: 'DELETE'
-    });
-    return res.data;
+    const current = await this.getStatusesAndCategories();
+    const updatedList = (current.expenseCategories || []).filter((e) => e.id !== id && e.code !== id);
+    const res = await this.updateStatusesAndCategories({ ...current, expenseCategories: updatedList });
+    return res?.expenseCategories || updatedList;
   },
 
   async addTicketStatus(newItem) {
-    const res = await request('/settings/ticket-statuses', {
-      method: 'POST',
-      body: JSON.stringify(newItem)
-    });
-    return res.data;
+    const current = await this.getStatusesAndCategories();
+    const updatedList = [...(current.ticketStatuses || []), newItem];
+    const res = await this.updateStatusesAndCategories({ ...current, ticketStatuses: updatedList });
+    return res?.ticketStatuses || updatedList;
   },
 
   async updateTicketStatus(id, patch) {
-    const res = await request(`/settings/ticket-statuses/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(patch)
-    });
-    return res.data;
+    const current = await this.getStatusesAndCategories();
+    const updatedList = (current.ticketStatuses || []).map((t) =>
+      t.id === id ? { ...t, ...patch } : t
+    );
+    const res = await this.updateStatusesAndCategories({ ...current, ticketStatuses: updatedList });
+    return res?.ticketStatuses || updatedList;
   },
 
   async deleteTicketStatus(id) {
-    const res = await request(`/settings/ticket-statuses/${id}`, {
-      method: 'DELETE'
-    });
-    return res.data;
+    const current = await this.getStatusesAndCategories();
+    const updatedList = (current.ticketStatuses || []).filter((t) => t.id !== id);
+    const res = await this.updateStatusesAndCategories({ ...current, ticketStatuses: updatedList });
+    return res?.ticketStatuses || updatedList;
   }
 };
