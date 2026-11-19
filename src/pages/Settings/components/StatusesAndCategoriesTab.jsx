@@ -962,7 +962,7 @@ export default function StatusesAndCategoriesTab() {
                 disabled={isSaving}
                 className="px-4 py-2 bg-[#075EE8] text-white text-xs font-bold rounded-xl shadow-sm"
               >
-                Save Changes to DB
+                Save Changes
               </button>
             </div>
           </form>
@@ -1002,7 +1002,7 @@ export default function StatusesAndCategoriesTab() {
                 disabled={isSaving}
                 className="px-4 py-2 bg-[#075EE8] text-white text-xs font-bold rounded-xl shadow-sm"
               >
-                Save Changes to DB
+                Save Changes
               </button>
             </div>
           </form>
@@ -1057,7 +1057,7 @@ export default function StatusesAndCategoriesTab() {
                 disabled={isSaving}
                 className="px-4 py-2 bg-[#075EE8] text-white text-xs font-bold rounded-xl shadow-sm"
               >
-                Save Changes to DB
+                Save Changes
               </button>
             </div>
           </form>
