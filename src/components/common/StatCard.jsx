@@ -2,7 +2,8 @@ import React from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 export default function StatCard({
-  title,
+  title: propTitle,
+  label,
   value,
   change,
   subtitle,
@@ -20,6 +21,7 @@ export default function StatCard({
   className = '',
   onClick
 }) {
+  const title = propTitle || label;
   const isRed = !isPositive || (change && change.includes('8%') && title?.toLowerCase().includes('expense'));
 
   // When customIcon is passed (Image 2 KPI Mode), render exact horizontal card matching reference Image 2

@@ -73,7 +73,7 @@ export default function InspectionsTable({
 
                 <td className="py-3.5 px-4">
                   <p className="font-semibold text-slate-800">{formatDate(i.date)}</p>
-                  <p className="text-[10px] text-slate-400">By: {i.inspector}</p>
+                  <p className="text-[10px] text-slate-400">By: {i.inspector || 'Marcus Brody'}</p>
                 </td>
 
                 <td className="py-3.5 px-4 font-mono font-bold text-slate-700">

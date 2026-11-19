@@ -8,7 +8,7 @@ export default function InspectionKpis({ stats }) {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
         icon={ClipboardCheck}
-        label="Total Inspections"
+        title="Total Inspections"
         value={stats.totalInspections}
         change={`${stats.passedCount} Clean Handover`}
         isPositive={true}
@@ -16,26 +16,26 @@ export default function InspectionKpis({ stats }) {
       />
       <StatCard
         icon={Clock}
-        label="Awaiting Inspection"
+        title="Awaiting Inspection"
         value={stats.awaitingCount ?? 0}
-        change={stats.awaitingCount > 0 ? "Pending Sign-off" : "All Clear"}
+        change={stats.awaitingCount > 0 ? `${stats.awaitingCount} Pending Sign-off` : "All Clear"}
         isPositive={stats.awaitingCount === 0}
         color="amber"
       />
       <StatCard
         icon={AlertTriangle}
-        label="Damages Flagged"
+        title="Damages Flagged"
         value={stats.damageCount}
-        change="Action Required"
-        isPositive={false}
+        change={stats.damageCount > 0 ? `${stats.damageCount} Action Required` : "0 Flagged • Clean"}
+        isPositive={stats.damageCount === 0}
         color="indigo"
       />
       <StatCard
         icon={ShieldAlert}
-        label="Accident Claims Total"
+        title="Accident Claims Total"
         value={formatCurrency(stats.totalRepairCost)}
-        change={`${stats.openClaims} Unresolved Claims`}
-        isPositive={false}
+        change={stats.openClaims > 0 ? `${stats.openClaims} Unresolved Claims` : "All Claims Settled"}
+        isPositive={stats.openClaims === 0}
         color="rose"
       />
     </div>
