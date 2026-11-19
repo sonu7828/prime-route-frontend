@@ -17,4 +17,5 @@ export * from './auth';
 export * from './auditApi';
 export * from './dashboardApi';
 export * from './paperworkApi';
+export * from './settingsApi';
 
