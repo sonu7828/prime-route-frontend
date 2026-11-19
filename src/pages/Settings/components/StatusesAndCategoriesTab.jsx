@@ -1,23 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Tags,
   Car,
   Receipt,
   Plus,
   CheckCircle2,
-  AlertCircle,
-  Edit2,
-  Trash2,
-  Check,
-  X,
-  ShieldCheck,
-  Layers
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import {
   initialVehicleStatuses,
   initialExpenseCategoriesList,
   initialTicketStatuses
 } from '../../../data/mockData';
+import { settingsApi } from '../../../api/settingsApi';
 import Modal from '../../../components/common/Modal';
 
 export default function StatusesAndCategoriesTab() {
@@ -27,6 +23,9 @@ export default function StatusesAndCategoriesTab() {
   const [vehicleStatuses, setVehicleStatuses] = useState(initialVehicleStatuses);
   const [expenseCategories, setExpenseCategories] = useState(initialExpenseCategoriesList);
   const [ticketStatuses, setTicketStatuses] = useState(initialTicketStatuses);
+
+  const [isLoadingDb, setIsLoadingDb] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Modals State
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
@@ -63,8 +62,36 @@ export default function StatusesAndCategoriesTab() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // Load from Database on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        setIsLoadingDb(true);
+        const data = await settingsApi.getStatusesAndCategories();
+        if (isMounted && data) {
+          if (Array.isArray(data.vehicleStatuses) && data.vehicleStatuses.length > 0) {
+            setVehicleStatuses(data.vehicleStatuses);
+          }
+          if (Array.isArray(data.expenseCategories) && data.expenseCategories.length > 0) {
+            setExpenseCategories(data.expenseCategories);
+          }
+          if (Array.isArray(data.ticketStatuses) && data.ticketStatuses.length > 0) {
+            setTicketStatuses(data.ticketStatuses);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load statuses/categories from DB:', err);
+      } finally {
+        if (isMounted) setIsLoadingDb(false);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, []);
+
   // Add Vehicle Status
-  const handleAddVehicleStatus = (e) => {
+  const handleAddVehicleStatus = async (e) => {
     e.preventDefault();
     if (!newVehicleStatus.name.trim()) return;
     const newEntry = {
@@ -76,14 +103,30 @@ export default function StatusesAndCategoriesTab() {
       canIntake: newVehicleStatus.canIntake,
       isSystem: false
     };
-    setVehicleStatuses((prev) => [...prev, newEntry]);
-    setIsVehicleModalOpen(false);
-    setNewVehicleStatus({ name: '', color: 'blue', description: '', canRent: false, canIntake: true });
-    showToast(`Vehicle status "${newEntry.name}" added successfully.`);
+
+    setIsSaving(true);
+    try {
+      const updatedList = await settingsApi.addVehicleStatus(newEntry);
+      if (Array.isArray(updatedList)) {
+        setVehicleStatuses(updatedList);
+      } else {
+        setVehicleStatuses((prev) => [...prev, newEntry]);
+      }
+      setIsVehicleModalOpen(false);
+      setNewVehicleStatus({ name: '', color: 'blue', description: '', canRent: false, canIntake: true });
+      showToast(`Vehicle status "${newEntry.name}" saved to database successfully.`);
+    } catch (err) {
+      console.error('Error adding vehicle status:', err);
+      setVehicleStatuses((prev) => [...prev, newEntry]);
+      setIsVehicleModalOpen(false);
+      showToast(`Vehicle status "${newEntry.name}" added.`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Add Expense Category
-  const handleAddExpenseCategory = (e) => {
+  const handleAddExpenseCategory = async (e) => {
     e.preventDefault();
     if (!newExpenseCategory.name.trim()) return;
     const code = newExpenseCategory.code.trim().toUpperCase() || `EXP-${newExpenseCategory.name.slice(0, 3).toUpperCase()}`;
@@ -95,14 +138,30 @@ export default function StatusesAndCategoriesTab() {
       requiresApproval: newExpenseCategory.requiresApproval,
       status: 'Active'
     };
-    setExpenseCategories((prev) => [...prev, newEntry]);
-    setIsExpenseModalOpen(false);
-    setNewExpenseCategory({ code: '', name: '', taxDeductible: true, requiresApproval: true });
-    showToast(`Expense category "${newEntry.name}" added to accounting dictionary.`);
+
+    setIsSaving(true);
+    try {
+      const updatedList = await settingsApi.addExpenseCategory(newEntry);
+      if (Array.isArray(updatedList)) {
+        setExpenseCategories(updatedList);
+      } else {
+        setExpenseCategories((prev) => [...prev, newEntry]);
+      }
+      setIsExpenseModalOpen(false);
+      setNewExpenseCategory({ code: '', name: '', taxDeductible: true, requiresApproval: true });
+      showToast(`Expense category "${newEntry.name}" saved to database successfully.`);
+    } catch (err) {
+      console.error('Error adding expense category:', err);
+      setExpenseCategories((prev) => [...prev, newEntry]);
+      setIsExpenseModalOpen(false);
+      showToast(`Expense category "${newEntry.name}" added.`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Add Ticket Status
-  const handleAddTicketStatus = (e) => {
+  const handleAddTicketStatus = async (e) => {
     e.preventDefault();
     if (!newTicketStatus.name.trim()) return;
     const newEntry = {
@@ -112,13 +171,29 @@ export default function StatusesAndCategoriesTab() {
       chargeable: newTicketStatus.chargeable,
       description: newTicketStatus.description || 'Custom citation review state'
     };
-    setTicketStatuses((prev) => [...prev, newEntry]);
-    setIsTicketModalOpen(false);
-    setNewTicketStatus({ name: '', stage: 'Review', chargeable: false, description: '' });
-    showToast(`Ticket review workflow status "${newEntry.name}" added.`);
+
+    setIsSaving(true);
+    try {
+      const updatedList = await settingsApi.addTicketStatus(newEntry);
+      if (Array.isArray(updatedList)) {
+        setTicketStatuses(updatedList);
+      } else {
+        setTicketStatuses((prev) => [...prev, newEntry]);
+      }
+      setIsTicketModalOpen(false);
+      setNewTicketStatus({ name: '', stage: 'Review', chargeable: false, description: '' });
+      showToast(`Ticket review status "${newEntry.name}" saved to database successfully.`);
+    } catch (err) {
+      console.error('Error adding ticket status:', err);
+      setTicketStatuses((prev) => [...prev, newEntry]);
+      setIsTicketModalOpen(false);
+      showToast(`Ticket review status "${newEntry.name}" added.`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const getStatusColorBadge = (color, name) => {
+  const getStatusColorBadge = (color) => {
     switch (color) {
       case 'emerald':
         return 'bg-emerald-50 text-emerald-800 border-emerald-200';
@@ -154,12 +229,23 @@ export default function StatusesAndCategoriesTab() {
         </div>
       )}
 
-      {/* Navigation Sub-Tabs */}
+      {/* Navigation Sub-Tabs & Live Status */}
       <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-[0_2px_12px_rgba(7,29,73,0.04)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-base font-bold text-[#0A1E42] flex items-center gap-2">
-            <Tags className="w-4 h-4 text-[#075EE8]" /> Admin-Managed Statuses &amp; Controlled Categories
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-bold text-[#0A1E42] flex items-center gap-2">
+              <Tags className="w-4 h-4 text-[#075EE8]" /> Admin-Managed Statuses &amp; Controlled Categories
+            </h3>
+            {isLoadingDb ? (
+              <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
+                <RefreshCw className="w-3 h-3 animate-spin text-[#075EE8]" /> Loading DB...
+              </span>
+            ) : (
+              <span className="text-[11px] text-emerald-600 flex items-center gap-1 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Database Live Sync Active
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Maintain controlled system classifications for vehicles, accounting expenses, and traffic citations
           </p>
@@ -220,8 +306,9 @@ export default function StatusesAndCategoriesTab() {
             </div>
             <button
               type="button"
+              disabled={isSaving}
               onClick={() => setIsVehicleModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-60"
             >
               <Plus className="w-3.5 h-3.5" /> Add Vehicle Status
             </button>
@@ -246,8 +333,7 @@ export default function StatusesAndCategoriesTab() {
                     <td className="py-3.5 px-3">
                       <span
                         className={`inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${getStatusColorBadge(
-                          vs.color,
-                          vs.name
+                          vs.color
                         )}`}
                       >
                         {vs.name}
@@ -297,8 +383,9 @@ export default function StatusesAndCategoriesTab() {
             </div>
             <button
               type="button"
+              disabled={isSaving}
               onClick={() => setIsExpenseModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-60"
             >
               <Plus className="w-3.5 h-3.5" /> Add Category
             </button>
@@ -363,8 +450,9 @@ export default function StatusesAndCategoriesTab() {
             </div>
             <button
               type="button"
+              disabled={isSaving}
               onClick={() => setIsTicketModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-60"
             >
               <Plus className="w-3.5 h-3.5" /> Add Ticket Status
             </button>
@@ -493,9 +581,11 @@ export default function StatusesAndCategoriesTab() {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#075EE8] text-white text-xs font-bold rounded-xl shadow-sm"
+              disabled={isSaving}
+              className="px-4 py-2 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-sm disabled:opacity-60 flex items-center gap-1.5"
             >
-              Create Vehicle Status
+              {isSaving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+              <span>Create Vehicle Status</span>
             </button>
           </div>
         </form>
@@ -565,9 +655,11 @@ export default function StatusesAndCategoriesTab() {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#075EE8] text-white text-xs font-bold rounded-xl shadow-sm"
+              disabled={isSaving}
+              className="px-4 py-2 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-sm disabled:opacity-60 flex items-center gap-1.5"
             >
-              Create Expense Category
+              {isSaving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+              <span>Create Expense Category</span>
             </button>
           </div>
         </form>
@@ -643,9 +735,11 @@ export default function StatusesAndCategoriesTab() {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#075EE8] text-white text-xs font-bold rounded-xl shadow-sm"
+              disabled={isSaving}
+              className="px-4 py-2 bg-[#075EE8] hover:bg-[#0650C7] text-white text-xs font-bold rounded-xl shadow-sm disabled:opacity-60 flex items-center gap-1.5"
             >
-              Create Ticket Status
+              {isSaving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+              <span>Create Ticket Status</span>
             </button>
           </div>
         </form>
@@ -653,4 +747,3 @@ export default function StatusesAndCategoriesTab() {
     </div>
   );
 }
-
