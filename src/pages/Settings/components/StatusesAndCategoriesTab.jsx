@@ -9,21 +9,16 @@ import {
   Trash2,
   AlertCircle
 } from 'lucide-react';
-import {
-  initialVehicleStatuses,
-  initialExpenseCategoriesList,
-  initialTicketStatuses
-} from '../../../data/mockData';
 import { settingsApi } from '../../../api/settingsApi';
 import Modal from '../../../components/common/Modal';
 
 export default function StatusesAndCategoriesTab() {
   const [activeSection, setActiveSection] = useState('vehicles'); // vehicles | expenses | tickets
 
-  // Managed Lists State
-  const [vehicleStatuses, setVehicleStatuses] = useState(initialVehicleStatuses);
-  const [expenseCategories, setExpenseCategories] = useState(initialExpenseCategoriesList);
-  const [ticketStatuses, setTicketStatuses] = useState(initialTicketStatuses);
+  // Managed Lists State - 100% Database Driven (No Mock Data)
+  const [vehicleStatuses, setVehicleStatuses] = useState([]);
+  const [expenseCategories, setExpenseCategories] = useState([]);
+  const [ticketStatuses, setTicketStatuses] = useState([]);
 
   const [isLoadingDb, setIsLoadingDb] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -63,35 +58,29 @@ export default function StatusesAndCategoriesTab() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Load from Database on mount
+  // Load purely from Database on mount
   useEffect(() => {
     let isMounted = true;
-    async function loadData() {
+    async function loadDataFromDatabase() {
       try {
         setIsLoadingDb(true);
         const data = await settingsApi.getStatusesAndCategories();
         if (isMounted && data) {
-          if (Array.isArray(data.vehicleStatuses) && data.vehicleStatuses.length > 0) {
-            setVehicleStatuses(data.vehicleStatuses);
-          }
-          if (Array.isArray(data.expenseCategories) && data.expenseCategories.length > 0) {
-            setExpenseCategories(data.expenseCategories);
-          }
-          if (Array.isArray(data.ticketStatuses) && data.ticketStatuses.length > 0) {
-            setTicketStatuses(data.ticketStatuses);
-          }
+          setVehicleStatuses(Array.isArray(data.vehicleStatuses) ? data.vehicleStatuses : []);
+          setExpenseCategories(Array.isArray(data.expenseCategories) ? data.expenseCategories : []);
+          setTicketStatuses(Array.isArray(data.ticketStatuses) ? data.ticketStatuses : []);
         }
       } catch (err) {
-        console.warn('Could not load statuses/categories from DB:', err);
+        console.error('Error fetching live data from database:', err);
       } finally {
         if (isMounted) setIsLoadingDb(false);
       }
     }
-    loadData();
+    loadDataFromDatabase();
     return () => { isMounted = false; };
   }, []);
 
-  // Add Vehicle Status
+  // Add Vehicle Status directly to DB
   const handleAddVehicleStatus = async (e) => {
     e.preventDefault();
     if (!newVehicleStatus.name.trim()) return;
@@ -118,15 +107,13 @@ export default function StatusesAndCategoriesTab() {
       showToast(`Vehicle status "${newEntry.name}" saved to database successfully.`);
     } catch (err) {
       console.error('Error adding vehicle status:', err);
-      setVehicleStatuses((prev) => [...prev, newEntry]);
-      setIsVehicleModalOpen(false);
-      showToast(`Vehicle status "${newEntry.name}" added.`);
+      showToast(`Error: ${err.message || 'Could not save to database'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Delete Vehicle Status
+  // Delete Vehicle Status directly from DB
   const handleDeleteVehicleStatus = async (id, name) => {
     if (!window.confirm(`Are you sure you want to remove status "${name}" from the database?`)) return;
     setIsSaving(true);
@@ -140,13 +127,13 @@ export default function StatusesAndCategoriesTab() {
       showToast(`Vehicle status "${name}" deleted from database.`);
     } catch (err) {
       console.error('Error deleting vehicle status:', err);
-      setVehicleStatuses((prev) => prev.filter((v) => v.id !== id));
+      showToast(`Error: ${err.message || 'Could not delete from database'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Add Expense Category
+  // Add Expense Category directly to DB
   const handleAddExpenseCategory = async (e) => {
     e.preventDefault();
     if (!newExpenseCategory.name.trim()) return;
@@ -173,15 +160,13 @@ export default function StatusesAndCategoriesTab() {
       showToast(`Expense category "${newEntry.name}" saved to database successfully.`);
     } catch (err) {
       console.error('Error adding expense category:', err);
-      setExpenseCategories((prev) => [...prev, newEntry]);
-      setIsExpenseModalOpen(false);
-      showToast(`Expense category "${newEntry.name}" added.`);
+      showToast(`Error: ${err.message || 'Could not save to database'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Delete Expense Category
+  // Delete Expense Category directly from DB
   const handleDeleteExpenseCategory = async (id, name) => {
     if (!window.confirm(`Are you sure you want to remove category "${name}" from the database?`)) return;
     setIsSaving(true);
@@ -195,13 +180,13 @@ export default function StatusesAndCategoriesTab() {
       showToast(`Expense category "${name}" deleted from database.`);
     } catch (err) {
       console.error('Error deleting expense category:', err);
-      setExpenseCategories((prev) => prev.filter((c) => c.id !== id && c.code !== id));
+      showToast(`Error: ${err.message || 'Could not delete from database'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Add Ticket Status
+  // Add Ticket Status directly to DB
   const handleAddTicketStatus = async (e) => {
     e.preventDefault();
     if (!newTicketStatus.name.trim()) return;
@@ -226,15 +211,13 @@ export default function StatusesAndCategoriesTab() {
       showToast(`Ticket review status "${newEntry.name}" saved to database successfully.`);
     } catch (err) {
       console.error('Error adding ticket status:', err);
-      setTicketStatuses((prev) => [...prev, newEntry]);
-      setIsTicketModalOpen(false);
-      showToast(`Ticket review status "${newEntry.name}" added.`);
+      showToast(`Error: ${err.message || 'Could not save to database'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Delete Ticket Status
+  // Delete Ticket Status directly from DB
   const handleDeleteTicketStatus = async (id, name) => {
     if (!window.confirm(`Are you sure you want to remove ticket status "${name}" from the database?`)) return;
     setIsSaving(true);
@@ -248,7 +231,7 @@ export default function StatusesAndCategoriesTab() {
       showToast(`Ticket status "${name}" deleted from database.`);
     } catch (err) {
       console.error('Error deleting ticket status:', err);
-      setTicketStatuses((prev) => prev.filter((t) => t.id !== id));
+      showToast(`Error: ${err.message || 'Could not delete from database'}`);
     } finally {
       setIsSaving(false);
     }
@@ -290,7 +273,7 @@ export default function StatusesAndCategoriesTab() {
         </div>
       )}
 
-      {/* Navigation Sub-Tabs & Live Status */}
+      {/* Navigation Sub-Tabs & Live DB Status */}
       <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-[0_2px_12px_rgba(7,29,73,0.04)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -299,7 +282,7 @@ export default function StatusesAndCategoriesTab() {
             </h3>
             {isLoadingDb ? (
               <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
-                <RefreshCw className="w-3 h-3 animate-spin text-[#075EE8]" /> Loading DB...
+                <RefreshCw className="w-3 h-3 animate-spin text-[#075EE8]" /> Loading from Database...
               </span>
             ) : (
               <span className="text-[11px] text-emerald-600 flex items-center gap-1 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -388,56 +371,71 @@ export default function StatusesAndCategoriesTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {vehicleStatuses.map((vs) => (
-                  <tr key={vs.id} className="hover:bg-blue-50/20 transition-colors">
-                    <td className="py-3.5 px-3 font-black text-[#0A1E42] text-xs">{vs.name}</td>
-                    <td className="py-3.5 px-3">
-                      <span
-                        className={`inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${getStatusColorBadge(
-                          vs.color
-                        )}`}
-                      >
-                        {vs.name}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 text-slate-600 max-w-sm">{vs.description}</td>
-                    <td className="py-3.5 px-3 text-center">
-                      {vs.canRent ? (
-                        <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px]">
-                          Yes
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 font-medium">Blocked</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-3 text-center">
-                      {vs.canIntake ? (
-                        <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px]">
-                          Allowed
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 font-medium">Restricted</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-3 text-right">
-                      <div className="inline-flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                          {vs.isSystem ? 'System Core' : 'Custom'}
-                        </span>
-                        {!vs.isSystem && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteVehicleStatus(vs.id, vs.name)}
-                            title="Delete custom status"
-                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                {isLoadingDb ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-slate-400">
+                      <RefreshCw className="w-5 h-5 animate-spin mx-auto text-[#075EE8] mb-2" />
+                      <span className="font-medium text-xs">Loading vehicle statuses from database...</span>
                     </td>
                   </tr>
-                ))}
+                ) : vehicleStatuses.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-slate-400">
+                      No vehicle statuses found in database. Click "Add Vehicle Status" above to create one.
+                    </td>
+                  </tr>
+                ) : (
+                  vehicleStatuses.map((vs) => (
+                    <tr key={vs.id} className="hover:bg-blue-50/20 transition-colors">
+                      <td className="py-3.5 px-3 font-black text-[#0A1E42] text-xs">{vs.name}</td>
+                      <td className="py-3.5 px-3">
+                        <span
+                          className={`inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${getStatusColorBadge(
+                            vs.color
+                          )}`}
+                        >
+                          {vs.name}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-slate-600 max-w-sm">{vs.description}</td>
+                      <td className="py-3.5 px-3 text-center">
+                        {vs.canRent ? (
+                          <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px]">
+                            Yes
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-medium">Blocked</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3 text-center">
+                        {vs.canIntake ? (
+                          <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px]">
+                            Allowed
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-medium">Restricted</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                            {vs.isSystem ? 'System Core' : 'Custom'}
+                          </span>
+                          {!vs.isSystem && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteVehicleStatus(vs.id, vs.name)}
+                              title="Delete from database"
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -451,7 +449,7 @@ export default function StatusesAndCategoriesTab() {
             <div>
               <h4 className="text-sm font-bold text-[#0A1E42]">Controlled Expense Categories</h4>
               <p className="text-xs text-slate-500">
-                {expenseCategories.length} controlled categories governing company expense entry, tax categorization, and approval enforcement
+                {expenseCategories.length} database-controlled categories governing company expense entry, tax categorization, and approval enforcement
               </p>
             </div>
             <button
@@ -476,47 +474,62 @@ export default function StatusesAndCategoriesTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {expenseCategories.map((ec) => (
-                  <tr key={ec.id} className="hover:bg-blue-50/20 transition-colors">
-                    <td className="py-3.5 px-3 font-mono font-bold text-slate-700">{ec.code}</td>
-                    <td className="py-3.5 px-3 font-black text-[#0A1E42] capitalize">{ec.name}</td>
-                    <td className="py-3.5 px-3 text-center">
-                      {ec.taxDeductible ? (
-                        <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px]">
-                          ✓ Deductible
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 font-medium">Non-deductible</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-3 text-center">
-                      {ec.requiresApproval ? (
-                        <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-bold text-[10px]">
-                          Required
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 font-medium">Auto-approved</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-3 text-right">
-                      <div className="inline-flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {ec.status}
-                        </span>
-                        {ec.id && String(ec.id).startsWith('EC-') && Number(String(ec.id).replace('EC-', '')) > 1000 && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteExpenseCategory(ec.id, ec.name)}
-                            title="Delete custom category"
-                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                {isLoadingDb ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-slate-400">
+                      <RefreshCw className="w-5 h-5 animate-spin mx-auto text-[#075EE8] mb-2" />
+                      <span className="font-medium text-xs">Loading expense categories from database...</span>
                     </td>
                   </tr>
-                ))}
+                ) : expenseCategories.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-slate-400">
+                      No expense categories found in database. Click "Add Category" to create one.
+                    </td>
+                  </tr>
+                ) : (
+                  expenseCategories.map((ec) => (
+                    <tr key={ec.id} className="hover:bg-blue-50/20 transition-colors">
+                      <td className="py-3.5 px-3 font-mono font-bold text-slate-700">{ec.code}</td>
+                      <td className="py-3.5 px-3 font-black text-[#0A1E42] capitalize">{ec.name}</td>
+                      <td className="py-3.5 px-3 text-center">
+                        {ec.taxDeductible ? (
+                          <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px]">
+                            ✓ Deductible
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-medium">Non-deductible</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3 text-center">
+                        {ec.requiresApproval ? (
+                          <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-bold text-[10px]">
+                            Required
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-medium">Auto-approved</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            {ec.status || 'Active'}
+                          </span>
+                          {ec.id && String(ec.id).startsWith('EC-') && Number(String(ec.id).replace('EC-', '')) > 1000 && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteExpenseCategory(ec.id, ec.name)}
+                              title="Delete from database"
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -530,7 +543,7 @@ export default function StatusesAndCategoriesTab() {
             <div>
               <h4 className="text-sm font-bold text-[#0A1E42]">Controlled Ticket &amp; Violation Review Workflow</h4>
               <p className="text-xs text-slate-500">
-                {ticketStatuses.length}-stage controlled lifecycle before citations can be settled or billed to driver balances
+                {ticketStatuses.length} database-controlled lifecycle stages before citations can be settled or billed
               </p>
             </div>
             <button
@@ -555,43 +568,58 @@ export default function StatusesAndCategoriesTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {ticketStatuses.map((ts) => (
-                  <tr key={ts.id} className="hover:bg-blue-50/20 transition-colors">
-                    <td className="py-3.5 px-3 font-black text-[#0A1E42]">{ts.name}</td>
-                    <td className="py-3.5 px-3">
-                      <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
-                        {ts.stage}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 text-slate-600 max-w-sm">{ts.description}</td>
-                    <td className="py-3.5 px-3 text-center">
-                      {ts.chargeable ? (
-                        <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px]">
-                          Eligible
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 font-medium">Review Hold</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-3 text-right">
-                      <div className="inline-flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                          {String(ts.id).startsWith('TS-') && Number(String(ts.id).replace('TS-', '')) > 1000 ? 'Custom' : 'Workflow Core'}
-                        </span>
-                        {String(ts.id).startsWith('TS-') && Number(String(ts.id).replace('TS-', '')) > 1000 && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteTicketStatus(ts.id, ts.name)}
-                            title="Delete custom ticket status"
-                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                {isLoadingDb ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-slate-400">
+                      <RefreshCw className="w-5 h-5 animate-spin mx-auto text-[#075EE8] mb-2" />
+                      <span className="font-medium text-xs">Loading ticket workflow states from database...</span>
                     </td>
                   </tr>
-                ))}
+                ) : ticketStatuses.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-slate-400">
+                      No ticket statuses found in database. Click "Add Ticket Status" to create one.
+                    </td>
+                  </tr>
+                ) : (
+                  ticketStatuses.map((ts) => (
+                    <tr key={ts.id} className="hover:bg-blue-50/20 transition-colors">
+                      <td className="py-3.5 px-3 font-black text-[#0A1E42]">{ts.name}</td>
+                      <td className="py-3.5 px-3">
+                        <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                          {ts.stage}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-slate-600 max-w-sm">{ts.description}</td>
+                      <td className="py-3.5 px-3 text-center">
+                        {ts.chargeable ? (
+                          <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px]">
+                            Eligible
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-medium">Review Hold</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                            {String(ts.id).startsWith('TS-') && Number(String(ts.id).replace('TS-', '')) > 1000 ? 'Custom' : 'Workflow Core'}
+                          </span>
+                          {String(ts.id).startsWith('TS-') && Number(String(ts.id).replace('TS-', '')) > 1000 && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTicketStatus(ts.id, ts.name)}
+                              title="Delete from database"
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
