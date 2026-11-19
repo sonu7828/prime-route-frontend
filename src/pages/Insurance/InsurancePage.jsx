@@ -117,6 +117,7 @@ export default function InsurancePage() {
   // Load live data from backend API with caching and in-flight deduplication
   const loadData = useCallback(async (isInitial = false, forceRefresh = false) => {
     if (_insuranceCache && !forceRefresh) {
+      applyData(_insuranceCache);
       setIsLoading(false);
       return;
     }

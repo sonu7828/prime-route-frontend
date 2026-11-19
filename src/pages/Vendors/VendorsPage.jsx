@@ -86,6 +86,9 @@ export default function VendorsPage() {
 
   const loadVendorsData = async (forceRefresh = false) => {
     if (_vendorsCache && !forceRefresh) {
+      setVendors(_vendorsCache.vendors);
+      setStats(_vendorsCache.stats);
+      setAllPayables(_vendorsCache.allPayables);
       setIsLoading(false);
       return;
     }
@@ -574,14 +577,26 @@ export default function VendorsPage() {
                               <Eye className="w-3.5 h-3.5" />
                               <span>Dossier</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeletingVendor(v)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                              title={v.status === 'Inactive' ? 'Manage Inactive Vendor Record' : 'Deactivate / Delete Vendor'}
-                            >
-                              {v.status === 'Inactive' ? <PowerOff className="w-3.5 h-3.5 text-amber-600" /> : <Trash2 className="w-3.5 h-3.5" />}
-                            </button>
+                            {/* If Active, show Deactivate/Delete button; If Inactive with zero spend, allow permanent delete; If Inactive with spend, already deactivated */}
+                            {v.status !== 'Inactive' ? (
+                              <button
+                                type="button"
+                                onClick={() => setDeletingVendor(v)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Deactivate / Delete Vendor"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            ) : v.spendYTD === 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => setDeletingVendor(v)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Permanently Delete (Zero financial records)"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            ) : null}
                           </div>
                         </td>
                       </tr>

@@ -62,6 +62,9 @@ export default function TollsTicketsPage() {
   // Fetch live data from backend API with caching and deduplication
   const loadData = useCallback(async (quiet = false, forceRefresh = false) => {
     if (_tollsCache && !forceRefresh) {
+      setTickets(_tollsCache.tickets);
+      setTolls(_tollsCache.tolls);
+      setLiveStats(_tollsCache.liveStats);
       setIsLoading(false);
       return;
     }

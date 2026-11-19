@@ -70,6 +70,9 @@ export default function MaintenancePage() {
   // Load live data from MySQL with caching and deduplication
   const loadData = useCallback(async (isSilent = false, forceRefresh = false) => {
     if (_maintenanceCache && !forceRefresh) {
+      setRecords(_maintenanceCache.records);
+      setLiveStats(_maintenanceCache.liveStats);
+      setVendors(_maintenanceCache.vendors);
       setIsLoading(false);
       return;
     }
