@@ -302,7 +302,7 @@ export default function RentalAgreementDocument({
           <div>
             <span className="text-xs font-sans text-slate-500 block">PrimeRoute Representative:</span>
             <span className="text-sm font-bold font-sans text-[#0A1E42] border-b border-slate-400 block pb-1">
-              {data.representativeName || 'John Doe (Administrator)'}
+              {data.representativeName || 'Marcus Brody (Owner & Managing Director)'}
             </span>
             <span className="text-xs font-sans text-slate-500 block mt-2">Date:</span>
             <span className="text-xs font-mono font-bold text-slate-800 border-b border-slate-400 block pb-1">

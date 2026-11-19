@@ -11,6 +11,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { settingsApi } from '../../../api/settingsApi';
+import { auditApi } from '../../../api/auditApi';
 import Modal from '../../../components/common/Modal';
 
 export default function StatusesAndCategoriesTab() {
@@ -105,6 +106,16 @@ export default function StatusesAndCategoriesTab() {
       setIsVehicleModalOpen(false);
       setNewVehicleStatus({ name: '', color: 'blue', description: '', canRent: false, canIntake: true });
       showToast(`Vehicle status "${newEntry.name}" saved to database successfully.`);
+
+      auditApi.appendAuditLog({
+        module: 'Settings',
+        action: 'Create',
+        entityType: 'Vehicle Status',
+        record: `${newEntry.id} (${newEntry.name})`,
+        previousValue: null,
+        newValue: `Status: ${newEntry.name}, Rental: ${newEntry.canRent ? 'Yes' : 'Blocked'}, Intake: ${newEntry.canIntake ? 'Allowed' : 'Restricted'}`,
+        notes: `Created new vehicle status "${newEntry.name}" in database.`
+      }).catch(() => {});
     } catch (err) {
       console.error('Error adding vehicle status:', err);
       showToast(`Error: ${err.message || 'Could not save to database'}`);
@@ -122,6 +133,16 @@ export default function StatusesAndCategoriesTab() {
       if (Array.isArray(updatedList)) setVehicleStatuses(updatedList);
       setEditingItem(null);
       showToast(`Vehicle status updated in database successfully.`);
+
+      auditApi.appendAuditLog({
+        module: 'Settings',
+        action: 'Edit',
+        entityType: 'Vehicle Status',
+        record: `${editingItem.data.id} (${editingItem.data.name})`,
+        previousValue: `Name: ${editingItem.data.name}`,
+        newValue: `Rental: ${editingItem.data.canRent ? 'Yes' : 'Blocked'}, Intake: ${editingItem.data.canIntake ? 'Allowed' : 'Restricted'}`,
+        notes: `Updated status settings for "${editingItem.data.name}" in database.`
+      }).catch(() => {});
     } catch (err) {
       showToast(`Error: ${err.message || 'Could not update'}`);
     } finally {
@@ -136,6 +157,16 @@ export default function StatusesAndCategoriesTab() {
       const updated = await settingsApi.deleteVehicleStatus(id);
       if (Array.isArray(updated)) setVehicleStatuses(updated);
       showToast(`Vehicle status "${name}" deleted from database.`);
+
+      auditApi.appendAuditLog({
+        module: 'Settings',
+        action: 'Archive',
+        entityType: 'Vehicle Status',
+        record: `${id} (${name})`,
+        previousValue: `Active Status: ${name}`,
+        newValue: 'Deleted from fleet database',
+        notes: `Removed vehicle status "${name}" from database.`
+      }).catch(() => {});
     } catch (err) {
       showToast(`Error: ${err.message || 'Could not delete from database'}`);
     } finally {
@@ -164,6 +195,16 @@ export default function StatusesAndCategoriesTab() {
       setIsExpenseModalOpen(false);
       setNewExpenseCategory({ code: '', name: '', taxDeductible: true, requiresApproval: true });
       showToast(`Expense category "${newEntry.name}" saved to database successfully.`);
+
+      auditApi.appendAuditLog({
+        module: 'Settings',
+        action: 'Create',
+        entityType: 'Expense Category',
+        record: `${newEntry.code} (${newEntry.name})`,
+        previousValue: null,
+        newValue: `Category: ${newEntry.name}, Approval: ${newEntry.requiresApproval ? 'Required' : 'Auto-approved'}`,
+        notes: `Created new expense category "${newEntry.name}" in database.`
+      }).catch(() => {});
     } catch (err) {
       showToast(`Error: ${err.message || 'Could not save to database'}`);
     } finally {
@@ -180,6 +221,16 @@ export default function StatusesAndCategoriesTab() {
       if (Array.isArray(updatedList)) setExpenseCategories(updatedList);
       setEditingItem(null);
       showToast(`Expense category updated in database successfully.`);
+
+      auditApi.appendAuditLog({
+        module: 'Settings',
+        action: 'Edit',
+        entityType: 'Expense Category',
+        record: `${editingItem.data.code || editingItem.data.id} (${editingItem.data.name})`,
+        previousValue: `Name: ${editingItem.data.name}`,
+        newValue: `Tax Deductible: ${editingItem.data.taxDeductible ? 'Yes' : 'No'}, Approval: ${editingItem.data.requiresApproval ? 'Required' : 'Auto-approved'}`,
+        notes: `Updated expense category "${editingItem.data.name}" in database.`
+      }).catch(() => {});
     } catch (err) {
       showToast(`Error: ${err.message || 'Could not update'}`);
     } finally {
@@ -194,6 +245,16 @@ export default function StatusesAndCategoriesTab() {
       const updated = await settingsApi.deleteExpenseCategory(id);
       if (Array.isArray(updated)) setExpenseCategories(updated);
       showToast(`Expense category "${name}" deleted from database.`);
+
+      auditApi.appendAuditLog({
+        module: 'Settings',
+        action: 'Archive',
+        entityType: 'Expense Category',
+        record: `${id} (${name})`,
+        previousValue: `Active Category: ${name}`,
+        newValue: 'Deleted from database',
+        notes: `Removed expense category "${name}" from database.`
+      }).catch(() => {});
     } catch (err) {
       showToast(`Error: ${err.message || 'Could not delete from database'}`);
     } finally {
@@ -220,6 +281,16 @@ export default function StatusesAndCategoriesTab() {
       setIsTicketModalOpen(false);
       setNewTicketStatus({ name: '', stage: 'Review', chargeable: false, description: '' });
       showToast(`Ticket review status "${newEntry.name}" saved to database successfully.`);
+
+      auditApi.appendAuditLog({
+        module: 'Settings',
+        action: 'Create',
+        entityType: 'Ticket Status',
+        record: `${newEntry.id} (${newEntry.name})`,
+        previousValue: null,
+        newValue: `Status: ${newEntry.name}, Stage: ${newEntry.stage}`,
+        notes: `Created new citation review status "${newEntry.name}" in database.`
+      }).catch(() => {});
     } catch (err) {
       showToast(`Error: ${err.message || 'Could not save to database'}`);
     } finally {
@@ -236,6 +307,16 @@ export default function StatusesAndCategoriesTab() {
       if (Array.isArray(updatedList)) setTicketStatuses(updatedList);
       setEditingItem(null);
       showToast(`Ticket status updated in database successfully.`);
+
+      auditApi.appendAuditLog({
+        module: 'Settings',
+        action: 'Edit',
+        entityType: 'Ticket Status',
+        record: `${editingItem.data.id} (${editingItem.data.name})`,
+        previousValue: `Name: ${editingItem.data.name}`,
+        newValue: `Stage: ${editingItem.data.stage}, Chargeable: ${editingItem.data.chargeable ? 'Eligible' : 'Review Hold'}`,
+        notes: `Updated citation review status "${editingItem.data.name}" in database.`
+      }).catch(() => {});
     } catch (err) {
       showToast(`Error: ${err.message || 'Could not update'}`);
     } finally {
@@ -250,6 +331,16 @@ export default function StatusesAndCategoriesTab() {
       const updated = await settingsApi.deleteTicketStatus(id);
       if (Array.isArray(updated)) setTicketStatuses(updated);
       showToast(`Ticket status "${name}" deleted from database.`);
+
+      auditApi.appendAuditLog({
+        module: 'Settings',
+        action: 'Archive',
+        entityType: 'Ticket Status',
+        record: `${id} (${name})`,
+        previousValue: `Active Status: ${name}`,
+        newValue: 'Deleted from database',
+        notes: `Removed ticket status "${name}" from database.`
+      }).catch(() => {});
     } catch (err) {
       showToast(`Error: ${err.message || 'Could not delete from database'}`);
     } finally {

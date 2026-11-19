@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell, Menu, User, ChevronDown, CheckCircle2, Shield, Save, Users, Sparkles } from 'lucide-react';
 import NotificationDropdown from '../common/NotificationDropdown';
 import ProfileDropdown from '../common/ProfileDropdown';
@@ -16,12 +16,22 @@ export default function Header({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [adminProfile, setAdminProfile] = useState({
-    name: 'John Doe',
-    email: 'john.doe@primeroute.io',
+  const [adminProfile, setAdminProfile] = useState(() => ({
+    name: activeRole?.fullName || 'Marcus Brody',
+    email: activeRole?.email || 'marcus.brody@primeroute.io',
     phone: '+1 (555) 019-2834',
     location: 'HQ - New York Depot',
-  });
+  }));
+
+  useEffect(() => {
+    if (activeRole) {
+      setAdminProfile((prev) => ({
+        ...prev,
+        name: activeRole.fullName || prev.name,
+        email: activeRole.email || prev.email,
+      }));
+    }
+  }, [activeRole]);
   const [profileSaved, setProfileSaved] = useState(false);
 
   return (

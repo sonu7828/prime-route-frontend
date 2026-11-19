@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Modal from '../../components/common/Modal';
 import { useFleet } from '../../context/FleetContext';
+import { useRole } from '../../context/RoleContext';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import ReturnMetricsComparison from './components/ReturnMetricsComparison';
 import ReturnConditionChecklist from './components/ReturnConditionChecklist';
@@ -20,6 +21,8 @@ export default function VehicleReturnModal({
   isViewOnly = false
 }) {
   const { resolveVehicle, resolveDriver, updateVehicleStatus, updateDriverVehicle, updateRental, addInspection } = useFleet();
+  const { activeRole } = useRole();
+  const currentInspector = activeRole?.fullName ? `${activeRole.fullName} (${activeRole.title || activeRole.name})` : 'Marcus Brody (Owner & Managing Director)';
 
   const isCompleted = rental?.status === 'Completed' || isViewOnly;
 
@@ -232,7 +235,7 @@ export default function VehicleReturnModal({
       tiresCondition: 'Good (Checked)',
       windshieldStatus: 'Clear / No Cracks',
       spareTirePresent: true,
-      inspector: 'John Doe (Admin)',
+      inspector: currentInspector,
       status: formData.hasDamage ? 'Damage Detected' : 'Passed',
       notes: formData.hasDamage
         ? `Damage Reported: ${formData.damageNotes}. Remarks: ${formData.remarks}`
