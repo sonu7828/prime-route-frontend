@@ -50,21 +50,25 @@ const URGENCY_FILTERS = [
   'Compliant (>30 days)'
 ];
 
+// Module-level in-memory cache to prevent redundant re-fetching on page switch
+let _insuranceCache = null;
+let _insuranceInFlight = null;
+
 export default function InsurancePage() {
   const { accidents: contextAccidents, vehicles, drivers } = useFleet();
 
   // Active Tab: 'compliance' | 'policies' | 'claims'
   const [activeTab, setActiveTab] = useState('compliance');
 
-  // Live Database State for Policies, Claims, and Compliance items
-  const [policies, setPolicies] = useState([]);
-  const [claims, setClaims] = useState([]);
-  const [complianceItems, setComplianceItems] = useState([]);
-  const [accidents, setAccidents] = useState([]);
-  const [backendStats, setBackendStats] = useState(null);
+  // Live Database State initialized from cache if available
+  const [policies, setPolicies] = useState(() => _insuranceCache?.policies || []);
+  const [claims, setClaims] = useState(() => _insuranceCache?.claims || []);
+  const [complianceItems, setComplianceItems] = useState(() => _insuranceCache?.complianceItems || []);
+  const [accidents, setAccidents] = useState(() => _insuranceCache?.accidents || []);
+  const [backendStats, setBackendStats] = useState(() => _insuranceCache?.backendStats || null);
 
   // Loading & Error States
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!_insuranceCache);
   const [fetchError, setFetchError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null); // { type: 'success'|'error', message: string }
@@ -102,11 +106,37 @@ export default function InsurancePage() {
     }
   }, [feedback]);
 
-  // Load live data from backend API
-  const loadData = useCallback(async (isInitial = false) => {
-    if (isInitial) setIsLoading(true);
+  const applyData = useCallback((data) => {
+    setPolicies(data.policies);
+    setClaims(data.claims);
+    setComplianceItems(data.complianceItems);
+    setAccidents(data.accidents);
+    if (data.backendStats) setBackendStats(data.backendStats);
+  }, []);
+
+  // Load live data from backend API with caching and in-flight deduplication
+  const loadData = useCallback(async (isInitial = false, forceRefresh = false) => {
+    if (_insuranceCache && !forceRefresh) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (!_insuranceCache) {
+      setIsLoading(true);
+    }
     setFetchError(null);
-    try {
+
+    if (_insuranceInFlight) {
+      try {
+        const result = await _insuranceInFlight;
+        applyData(result);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    _insuranceInFlight = (async () => {
       const [policiesData, claimsData, complianceData, statsData, accidentsData] = await Promise.all([
         insuranceApi.getPolicies().catch((err) => {
           console.error('Failed to load policies:', err);
@@ -124,18 +154,29 @@ export default function InsurancePage() {
         insuranceApi.getAccidents().catch(() => [])
       ]);
 
-      setPolicies(Array.isArray(policiesData) ? policiesData : []);
-      setClaims(Array.isArray(claimsData) ? claimsData : []);
-      setComplianceItems(Array.isArray(complianceData) ? complianceData : []);
-      setAccidents(Array.isArray(accidentsData) && accidentsData.length > 0 ? accidentsData : (contextAccidents || []));
-      if (statsData) setBackendStats(statsData);
+      const result = {
+        policies: Array.isArray(policiesData) ? policiesData : [],
+        claims: Array.isArray(claimsData) ? claimsData : [],
+        complianceItems: Array.isArray(complianceData) ? complianceData : [],
+        accidents: Array.isArray(accidentsData) && accidentsData.length > 0 ? accidentsData : (contextAccidents || []),
+        backendStats: statsData || null
+      };
+
+      _insuranceCache = result;
+      return result;
+    })();
+
+    try {
+      const result = await _insuranceInFlight;
+      applyData(result);
     } catch (err) {
       console.error('Error fetching insurance and compliance data:', err);
       setFetchError(err.message || 'Failed to connect with insurance database');
     } finally {
+      _insuranceInFlight = null;
       setIsLoading(false);
     }
-  }, [contextAccidents]);
+  }, [applyData, contextAccidents]);
 
   useEffect(() => {
     loadData(true);
@@ -247,7 +288,7 @@ export default function InsurancePage() {
         await insuranceApi.createPolicy(policyData);
         setFeedback({ type: 'success', message: `New policy "${policyData.policyNumber}" created in database!` });
       }
-      await loadData();
+      await loadData(false, true);
       setIsPolicyModalOpen(false);
       setSelectedPolicy(null);
     } catch (err) {
@@ -280,7 +321,7 @@ export default function InsurancePage() {
         await insuranceApi.createClaim(claimData);
         setFeedback({ type: 'success', message: `New insurance claim "${claimData.claimNumber}" filed and stored in database!` });
       }
-      await loadData();
+      await loadData(false, true);
       setIsClaimModalOpen(false);
       setSelectedClaim(null);
     } catch (err) {
@@ -319,7 +360,7 @@ export default function InsurancePage() {
         const res = await insuranceApi.deleteCompliance(item.id);
         setFeedback({ type: 'success', message: res?.message || 'Compliance record deleted successfully' });
       }
-      await loadData();
+      await loadData(false, true);
     } catch (err) {
       console.error('Delete failed:', err);
       setFeedback({ type: 'error', message: err.message || 'Failed to delete record from database' });
@@ -343,7 +384,7 @@ export default function InsurancePage() {
         type: 'success',
         message: `Compliance for "${renewedItem.title}" extended to ${renewedItem.expiryDate} in database!`
       });
-      await loadData();
+      await loadData(false, true);
       setIsRenewModalOpen(false);
       setSelectedComplianceItem(null);
     } catch (err) {
@@ -363,7 +404,7 @@ export default function InsurancePage() {
         type: 'success',
         message: `New compliance record "${compData.title}" created in database!`
       });
-      await loadData();
+      await loadData(false, true);
       setIsAddComplianceModalOpen(false);
     } catch (err) {
       console.error('Failed to create compliance record:', err);
@@ -418,7 +459,7 @@ export default function InsurancePage() {
 
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
-            onClick={() => loadData()}
+            onClick={() => loadData(false, true)}
             disabled={isLoading}
             className="px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer disabled:opacity-50"
             title="Refresh from Database"
@@ -664,7 +705,7 @@ export default function InsurancePage() {
         <ErrorState
           title="Database Connection Error"
           message={fetchError}
-          onRetry={() => loadData(true)}
+          onRetry={() => loadData(false, true)}
         />
       ) : activeTab === 'compliance' ? (
         <>

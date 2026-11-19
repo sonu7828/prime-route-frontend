@@ -45,11 +45,15 @@ const SERVICE_CATEGORIES = [
   { id: 'cleaning', label: 'Detailing & Wash' }
 ];
 
+// Module-level in-memory cache to prevent redundant re-fetching on page switch
+let _vendorsCache = null;
+let _vendorsInFlight = null;
+
 export default function VendorsPage() {
-  const [vendors, setVendors] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [allPayables, setAllPayables] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [vendors, setVendors] = useState(() => _vendorsCache?.vendors || []);
+  const [stats, setStats] = useState(() => _vendorsCache?.stats || null);
+  const [allPayables, setAllPayables] = useState(() => _vendorsCache?.allPayables || []);
+  const [isLoading, setIsLoading] = useState(!_vendorsCache);
   const [fetchError, setFetchError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -75,21 +79,53 @@ export default function VendorsPage() {
     notes: ''
   });
 
-  const loadVendorsData = async () => {
-    setIsLoading(true);
+  const loadVendorsData = async (forceRefresh = false) => {
+    if (_vendorsCache && !forceRefresh) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (!_vendorsCache) {
+      setIsLoading(true);
+    }
     setFetchError(null);
-    try {
+
+    if (_vendorsInFlight) {
+      try {
+        const result = await _vendorsInFlight;
+        setVendors(result.vendors);
+        setStats(result.stats);
+        setAllPayables(result.allPayables);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    _vendorsInFlight = (async () => {
       const [vendorsRes, payablesRes] = await Promise.all([
         vendorsApi.getVendors(),
         accountingApi.getPayables().catch(() => [])
       ]);
-      setVendors(vendorsRes.vendors || []);
-      setStats(vendorsRes.stats || null);
-      setAllPayables(payablesRes || []);
+      const result = {
+        vendors: vendorsRes.vendors || [],
+        stats: vendorsRes.stats || null,
+        allPayables: payablesRes || []
+      };
+      _vendorsCache = result;
+      return result;
+    })();
+
+    try {
+      const result = await _vendorsInFlight;
+      setVendors(result.vendors);
+      setStats(result.stats);
+      setAllPayables(result.allPayables);
     } catch (err) {
       console.error('Failed to load vendors:', err);
       setFetchError(err.message || 'Failed to connect to vendors API');
     } finally {
+      _vendorsInFlight = null;
       setIsLoading(false);
     }
   };
@@ -162,7 +198,7 @@ export default function VendorsPage() {
         notes: ''
       });
       setNotification(`Vendor ${vendorRecord.name} (${vendorRecord.id}) onboarded successfully into database.`);
-      await loadVendorsData();
+      await loadVendorsData(true);
       setTimeout(() => setNotification(''), 4000);
     } catch (err) {
       console.error('Failed to create vendor:', err);
@@ -178,7 +214,7 @@ export default function VendorsPage() {
       const res = await vendorsApi.deleteVendor(vendor.id);
       setNotification(res?.message || `Vendor ${vendor.name} updated.`);
       setDeletingVendor(null);
-      await loadVendorsData();
+      await loadVendorsData(true);
       setTimeout(() => setNotification(''), 4000);
     } catch (err) {
       console.error('Failed to delete vendor:', err);
@@ -206,7 +242,7 @@ export default function VendorsPage() {
 
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           <button
-            onClick={loadVendorsData}
+            onClick={() => loadVendorsData(true)}
             disabled={isLoading}
             className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
             title="Reload from MySQL database"
@@ -255,7 +291,7 @@ export default function VendorsPage() {
         <ErrorState
           title="Vendor Directory Connection Error"
           message={fetchError}
-          onRetry={loadVendorsData}
+          onRetry={() => loadVendorsData(true)}
         />
       ) : (
         <>
