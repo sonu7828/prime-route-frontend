@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   RotateCcw,
   AlertTriangle,
@@ -11,6 +11,7 @@ import {
 import Modal from '../../../components/common/Modal';
 import { FormInput, FormTextarea } from '../../../components/forms/FormInputs';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
+import { useRole } from '../../../context/RoleContext';
 
 export default function ReverseTransactionModal({
   isOpen,
@@ -18,10 +19,26 @@ export default function ReverseTransactionModal({
   transaction,
   onConfirmReversal
 }) {
+  const { activeRole } = useRole();
+  const getOfficerName = () => {
+    if (activeRole?.fullName) {
+      return `${activeRole.fullName} (${activeRole.title || activeRole.name})`;
+    }
+    return 'Marcus Brody (Owner & Managing Director)';
+  };
+
   const [reason, setReason] = useState('');
   const [reversalDate, setReversalDate] = useState(new Date().toISOString().split('T')[0]);
-  const [authorizedBy, setAuthorizedBy] = useState('John Doe (Finance Admin)');
+  const [authorizedBy, setAuthorizedBy] = useState(getOfficerName);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setAuthorizedBy(getOfficerName());
+      setReason('');
+      setError('');
+    }
+  }, [isOpen, activeRole]);
 
   if (!isOpen || !transaction) return null;
 

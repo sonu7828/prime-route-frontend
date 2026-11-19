@@ -127,7 +127,7 @@ export default function SectionEmployment({ formData, errors, onEmploymentChange
           >
             <option value="Marcus Vance">Marcus Vance (Fleet Operations Lead)</option>
             <option value="Sarah Jenkins">Sarah Jenkins (Safety & Compliance)</option>
-            <option value="John Doe">John Doe (Managing Director)</option>
+            <option value="Marcus Brody">Marcus Brody (Managing Director & Owner)</option>
           </select>
           {errors.assignedManager && <p className="text-[11px] text-rose-500 mt-1">{errors.assignedManager}</p>}
         </div>

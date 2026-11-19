@@ -16,6 +16,7 @@ import {
 import Modal from '../../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../../components/forms/FormInputs';
 import { formatCurrency, getCurrencySymbol } from '../../../utils/formatters';
+import { useRole } from '../../../context/RoleContext';
 
 // The 16 Controlled Categories (Admin-managed controlled list)
 export const EXPENSE_CATEGORIES = [
@@ -48,10 +49,10 @@ const PAYMENT_METHODS = [
 ];
 
 const APPROVERS = [
-  'Sarah Jenkins (Finance Controller)',
-  'John Doe (Owner / Primary Admin)',
-  'Operations Director (Secondary Admin)',
-  'Marcus Brody (Fleet Lead)',
+  'Michael Chang (Financial Controller)',
+  'Marcus Brody (Owner & Managing Director)',
+  'Elena Vance (Operations Director)',
+  'Tom Gallagher (Fleet & Service Lead)',
 ];
 
 export default function ExpenseModal({
@@ -62,8 +63,11 @@ export default function ExpenseModal({
   vehicles = [],
   drivers = [],
   vendors = [],
-  currentUser = { name: 'John Doe (Admin)' }
+  currentUser
 }) {
+  const { activeRole } = useRole();
+  const activeUserName = currentUser?.name || (activeRole?.fullName ? `${activeRole.fullName} (${activeRole.title || activeRole.name})` : 'Marcus Brody (Owner)');
+
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     category: 'repairs',
@@ -78,8 +82,8 @@ export default function ExpenseModal({
     invoiceReceiptUpload: null,
     receiptFileName: '',
     receiptFileSize: '',
-    enteredBy: currentUser?.name || 'John Doe (Admin)',
-    approver: 'Sarah Jenkins (Finance Controller)',
+    enteredBy: activeUserName,
+    approver: 'Michael Chang (Financial Controller)',
     notes: '',
   });
 
@@ -102,13 +106,13 @@ export default function ExpenseModal({
         invoiceReceiptUpload: null,
         receiptFileName: '',
         receiptFileSize: '',
-        enteredBy: currentUser?.name || 'John Doe (Admin)',
-        approver: 'Sarah Jenkins (Finance Controller)',
+        enteredBy: activeUserName,
+        approver: 'Michael Chang (Financial Controller)',
         notes: '',
       });
       setReceiptPreview(null);
     }
-  }, [isOpen, vendors, currentUser]);
+  }, [isOpen, vendors, currentUser, activeUserName]);
 
   // Requirement 4: Duplicate Invoice Warning Engine
   // Triggered if same vendor + invoice number, or same vendor + amount + date

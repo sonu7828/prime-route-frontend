@@ -16,6 +16,7 @@ import Modal from '../common/Modal';
 import DigitalSignaturePad from './DigitalSignaturePad';
 import RentalAgreementDocument from './RentalAgreementDocument';
 import { useFleet } from '../../context/FleetContext';
+import { useRole } from '../../context/RoleContext';
 import { formatDate } from '../../utils/formatters';
 
 export default function RentalAgreementModal({
@@ -25,6 +26,8 @@ export default function RentalAgreementModal({
   onAgreementSigned
 }) {
   const { resolveVehicle, resolveDriver, updateRental, setRentals } = useFleet();
+  const { activeRole } = useRole();
+  const repName = activeRole?.fullName ? `${activeRole.fullName} (${activeRole.title || activeRole.name})` : 'Marcus Brody (Owner & Managing Director)';
 
   const isAlreadySigned = rental?.agreementStatus === 'Signed';
 
@@ -47,7 +50,7 @@ export default function RentalAgreementModal({
         ...rental.agreementData,
         agreementId: rental.agreementData.agreementId || rental.agreementId || `AGR-${rental.id}`,
         owner: rental.agreementData.owner || 'PrimeRoute Fleet Operations',
-        representativeName: rental.agreementData.representativeName || 'John Doe (Administrator)',
+        representativeName: rental.agreementData.representativeName || repName,
         driverName: rental.agreementData.driverName || rental.agreementData.renter || resolvedDriver?.name || rental.driver || rental.customer || 'Driver Name',
         renter: rental.agreementData.renter || rental.agreementData.driverName || resolvedDriver?.name || rental.driver || 'Driver Name',
         driverLicense: rental.agreementData.driverLicense || rental.agreementData.license || resolvedDriver?.license || 'DL-PENDING',
@@ -88,7 +91,7 @@ export default function RentalAgreementModal({
     return {
       agreementId: rental.agreementId || `AGR-${rental.id}`,
       owner: 'PrimeRoute Fleet Operations',
-      representativeName: 'John Doe (Administrator)',
+      representativeName: repName,
       driverName: dName,
       driverLicense: dLicense,
       driverPhone: dPhone,
@@ -312,7 +315,7 @@ Driver: Digitally Signed (${data.driverName})
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <DigitalSignaturePad
                 title="PrimeRoute Representative Signature"
-                signerName={baseAgreementData?.representativeName || 'John Doe (Administrator)'}
+                signerName={baseAgreementData?.representativeName || repName}
                 role="Authorized Representative"
                 initialSignature={representativeSignature}
                 onSignatureChange={(sig) => {

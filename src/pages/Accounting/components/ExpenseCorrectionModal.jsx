@@ -3,14 +3,17 @@ import { RotateCcw, AlertTriangle, ShieldAlert, CheckCircle2, FileEdit } from 'l
 import Modal from '../../../components/common/Modal';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { EXPENSE_CATEGORIES } from './ExpenseModal';
+import { useRole } from '../../../context/RoleContext';
 
 export default function ExpenseCorrectionModal({
   isOpen,
   onClose,
   expense,
   onConfirmCorrection,
-  currentUser = { name: 'John Doe (Admin)' }
+  currentUser
 }) {
+  const { activeRole } = useRole();
+  const activeAuditor = currentUser?.name || (activeRole?.fullName ? `${activeRole.fullName} (${activeRole.title || activeRole.name})` : 'Marcus Brody (Owner)');
   const [formData, setFormData] = useState({
     amount: '',
     category: '',
@@ -65,11 +68,11 @@ export default function ExpenseCorrectionModal({
       date: formData.date,
       isCorrected: true,
       correctedAt: new Date().toISOString(),
-      correctedBy: currentUser?.name || 'Authorized Auditor',
+      correctedBy: activeAuditor,
       correctionReason: formData.correctionReason.trim(),
       previousValues,
       // If amount or critical info changed, place in pending review or update audit
-      notes: `${expense.notes ? expense.notes + ' | ' : ''}Corrected on ${new Date().toLocaleDateString()} by ${currentUser?.name || 'Admin'}: "${formData.correctionReason.trim()}". Prior amount: ${formatCurrency(expense.amount)}.`
+      notes: `${expense.notes ? expense.notes + ' | ' : ''}Corrected on ${new Date().toLocaleDateString()} by ${activeAuditor}: "${formData.correctionReason.trim()}". Prior amount: ${formatCurrency(expense.amount)}.`
     };
 
     onConfirmCorrection(updatedExpense);
