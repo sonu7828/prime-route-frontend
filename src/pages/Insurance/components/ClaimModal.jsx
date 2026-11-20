@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../../../components/common/Modal';
 import { ShieldAlert, DollarSign, FileText, Wrench, Building } from 'lucide-react';
 import { getCurrencySymbol, formatCurrency } from '../../../utils/formatters';
+import { insuranceApi } from '../../../api/insuranceApi';
 
 export default function ClaimModal({
   isOpen,
@@ -14,17 +15,38 @@ export default function ClaimModal({
   drivers = []
 }) {
   const availablePolicies = policies.length > 0 ? policies : [];
+  const [liveAccidents, setLiveAccidents] = useState(accidents);
+
+  useEffect(() => {
+    if (Array.isArray(accidents) && accidents.length > 0) {
+      setLiveAccidents(accidents);
+    }
+  }, [accidents]);
+
+  // Fetch live accidents directly from DB when modal opens to guarantee fresh data
+  useEffect(() => {
+    if (isOpen) {
+      insuranceApi.getAccidents()
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            setLiveAccidents(data);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
 
   const getInitialForm = () => {
     const firstPol = availablePolicies[0] || {};
-    const firstAccident = accidents[0] || null;
+    const accidentList = liveAccidents.length > 0 ? liveAccidents : accidents;
+    const firstAccident = accidentList[0] || null;
 
     return {
       claimNumber: '',
       policyId: firstPol.id || '',
       policyNumber: firstPol.policyNumber || firstPol.policy_number || '',
       insurer: firstPol.insurer || firstPol.insurer_name || '',
-      accidentId: firstAccident ? firstAccident.id : '',
+      accidentId: firstAccident ? (firstAccident.id || firstAccident.rawId) : '',
       incidentDate: firstAccident?.incidentDate || firstAccident?.date || new Date().toISOString().split('T')[0],
       vehicle: firstAccident?.vehicle || (vehicles[0]?.name || `${vehicles[0]?.make || ''} ${vehicles[0]?.model || ''}`.trim()) || '',
       plate: firstAccident?.plate || vehicles[0]?.plate || '',
@@ -49,27 +71,31 @@ export default function ClaimModal({
   const [formData, setFormData] = useState(getInitialForm);
 
   useEffect(() => {
+    if (!isOpen) return;
     if (claim) {
       setFormData(claim);
     } else {
       setFormData(getInitialForm());
     }
-  }, [claim, isOpen, policies, accidents, vehicles, drivers]);
+  }, [claim, isOpen]);
 
   const handleAccidentSelect = (accidentId) => {
     if (!accidentId || accidentId === 'DIRECT_CLAIM') {
       setFormData((prev) => ({
         ...prev,
-        accidentId: accidentId || ''
+        accidentId: ''
       }));
       return;
     }
 
-    const selected = accidents.find((a) => String(a.id) === String(accidentId) || a.rawId === accidentId);
+    const accidentList = liveAccidents.length > 0 ? liveAccidents : accidents;
+    const selected = accidentList.find(
+      (a) => String(a.id) === String(accidentId) || String(a.rawId) === String(accidentId) || a.id === accidentId
+    );
     if (selected) {
       setFormData((prev) => ({
         ...prev,
-        accidentId: selected.id,
+        accidentId: selected.id || selected.rawId,
         vehicle: selected.vehicle || prev.vehicle,
         plate: selected.plate || prev.plate,
         driver: selected.driver || prev.driver,
@@ -171,9 +197,9 @@ export default function ClaimModal({
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-bold"
                 >
                   <option value="">-- Direct Claim (Comprehensive / Storm / Glass / Vandalism) --</option>
-                  {accidents.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.id} – {a.vehicle} {a.plate ? `(${a.plate})` : ''} ({a.incidentDate || a.date})
+                  {(liveAccidents && liveAccidents.length > 0 ? liveAccidents : accidents).map((a) => (
+                    <option key={a.id || a.rawId} value={a.id || a.rawId}>
+                      {a.id || `ACC-${a.rawId}`} – {a.vehicle} {a.plate ? `(${a.plate})` : ''} ({a.incidentDate || a.date})
                     </option>
                   ))}
                 </select>
@@ -308,7 +334,7 @@ export default function ClaimModal({
 
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Carrier Paid ($)
+                Carrier Paid ({getCurrencySymbol()})
               </label>
               <input
                 type="number"
@@ -320,7 +346,7 @@ export default function ClaimModal({
 
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Driver Recovered ($)
+                Driver Recovered ({getCurrencySymbol()})
               </label>
               <input
                 type="number"

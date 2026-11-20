@@ -116,6 +116,9 @@ export default function InsurancePage() {
 
   // Load live data from backend API with caching and in-flight deduplication
   const loadData = useCallback(async (isInitial = false, forceRefresh = false) => {
+    if (forceRefresh) {
+      _insuranceCache = null;
+    }
     if (_insuranceCache && !forceRefresh) {
       applyData(_insuranceCache);
       setIsLoading(false);
@@ -180,7 +183,7 @@ export default function InsurancePage() {
   }, [applyData, contextAccidents]);
 
   useEffect(() => {
-    loadData(true);
+    loadData(true, true);
   }, [loadData]);
 
   // Filtered Compliance Items
@@ -495,6 +498,7 @@ export default function InsurancePage() {
             <button
               onClick={() => {
                 setSelectedClaim(null);
+                loadData(false, true);
                 setIsClaimModalOpen(true);
               }}
               className="px-3.5 py-2 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
@@ -765,6 +769,7 @@ export default function InsurancePage() {
           onDeleteClaim={handleRequestDeleteClaim}
           onFileClaim={() => {
             setSelectedClaim(null);
+            loadData(false, true);
             setIsClaimModalOpen(true);
           }}
           onResetFilters={() => setSearchQuery('')}

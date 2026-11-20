@@ -1,20 +1,20 @@
 import React from 'react';
-import { Sparkles, CheckCircle2, XCircle, RotateCcw } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, XCircle, RotateCcw } from 'lucide-react';
 
 export default function AdminReviewBar({ roleName, activeRoleName, onApprove, onReject, onReset }) {
   const displayRole = roleName || activeRoleName || 'Administrator';
   return (
     <div className="p-4 rounded-3xl bg-gradient-to-r from-slate-900 to-[#071D49] text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
       <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-white/10 text-amber-300">
-          <Sparkles className="w-5 h-5" />
+        <div className="p-2.5 rounded-xl bg-white/10 text-emerald-300">
+          <ShieldCheck className="w-5 h-5" />
         </div>
         <div>
           <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-            Admin Testing Tools ({displayRole} Mode)
+            {displayRole} Compliance &amp; Review Panel
           </p>
           <p className="text-xs text-slate-300 mt-0.5">
-            Simulate reviewing this employee's onboarding paperwork as an Administrator.
+            Review and officially approve or request revisions for this employee's onboarding paperwork.
           </p>
         </div>
       </div>

@@ -69,6 +69,10 @@ export default function MaintenancePage() {
 
   // Load live data from MySQL with caching and deduplication
   const loadData = useCallback(async (isSilent = false, forceRefresh = false) => {
+    if (forceRefresh) {
+      _maintenanceCache = null;
+      _maintenanceInFlight = null;
+    }
     if (_maintenanceCache && !forceRefresh) {
       setRecords(_maintenanceCache.records);
       setLiveStats(_maintenanceCache.liveStats);
@@ -358,6 +362,21 @@ export default function MaintenancePage() {
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    _maintenanceCache = null;
+    _maintenanceInFlight = null;
+    try {
+      await loadData(true, true);
+      setToastMessage('✓ Maintenance data refreshed successfully from MySQL database.');
+    } catch (err) {
+      setToastMessage(`Error refreshing data: ${err.message || 'Server error'}`);
+    } finally {
+      setIsRefreshing(false);
+      setTimeout(() => setToastMessage(null), 3500);
+    }
+  };
+
   const handleExport = () => {
     exportToCsv(
       'PrimeRoute_Maintenance_Fleet_Work_Orders',
@@ -398,35 +417,15 @@ export default function MaintenancePage() {
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-2xl font-black text-[#0A1E42] tracking-tight">Fleet Maintenance &amp; Work Orders</h1>
-            <span className="text-xs font-bold px-3 py-1 rounded-xl bg-blue-50 text-[#075EE8] border border-blue-100 shadow-2xs">
-              {defaultInterval.toLocaleString()} mi Standard Interval
-            </span>
-            <span className="text-xs font-bold px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Live MySQL Connected
-            </span>
             {stats.overdueCount > 0 && (
               <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 animate-pulse">
                 ⚠️ {stats.overdueCount} Overdue Services
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Preventative maintenance cadences, 5,000-mile synthetic oil thresholds, workshop work orders, and vehicle availability control
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-          {/* Refresh Button */}
-          <button
-            onClick={() => loadData(true, true)}
-            disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95 disabled:opacity-50"
-            title={`Last refreshed at ${lastRefreshed.toLocaleTimeString()}`}
-          >
-            <RotateCw className={`w-3.5 h-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
-
           {/* View Toggle (Cards vs Table) */}
           <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button

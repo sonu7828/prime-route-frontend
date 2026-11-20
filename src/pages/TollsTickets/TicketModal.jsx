@@ -411,20 +411,18 @@ export default function TicketModal({
             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
               Issuing Authority <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="text"
-              list="authority-list"
+            <select
               value={formData.issuingAuthority}
               onChange={(e) => setFormData({ ...formData, issuingAuthority: e.target.value })}
-              placeholder="e.g. NYC Department of Finance (DOF)"
-              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8]"
+              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8] font-bold text-[#0A1E42]"
               required
-            />
-            <datalist id="authority-list">
+            >
               {ISSUING_AUTHORITIES.map((auth) => (
-                <option key={auth} value={auth} />
+                <option key={auth} value={auth}>
+                  {auth}
+                </option>
               ))}
-            </datalist>
+            </select>
           </div>
 
           <div>

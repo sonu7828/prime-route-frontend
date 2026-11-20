@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Wrench,
   Upload,
@@ -56,15 +56,25 @@ export default function MaintenanceModal({
   // Default oil change interval 5,000 miles
   const defaultOilChangeInterval = 5000;
 
-  const availableProviders = liveVendors.length > 0
-    ? liveVendors.map((v) => v.name)
-    : [
-        'Jiffy Lube Fleet Maintenance',
-        'Bridgestone Commercial Tire Centers',
-        'CleanCar Express Fleet Detailing',
-        'Speedy Pro Auto Clinic',
-        'QuickLube Express Center'
-      ];
+  const availableProviders = useMemo(() => {
+    // Filter active workshops & repair providers (strictly excluding Inactive vendors and Insurance/Toll agencies)
+    const filtered = (liveVendors || []).filter((v) => {
+      const status = (v.status || '').toLowerCase();
+      if (status === 'inactive' || status === 'deactivated') return false;
+      const cat = (v.category || '').toLowerCase();
+      if (cat === 'insurance' || cat === 'tolls' || cat === 'software') return false;
+      return true;
+    });
+
+    const names = filtered.map((v) => v.name).filter(Boolean);
+    if (!names.includes('Metro Precision Collision & Bodywork')) {
+      names.unshift('Metro Precision Collision & Bodywork');
+    }
+    if (!names.includes('Fleet Workshop Partner')) {
+      names.push('Fleet Workshop Partner');
+    }
+    return names;
+  }, [liveVendors]);
 
   const [formData, setFormData] = useState({
     vehicleId: '',
@@ -73,7 +83,7 @@ export default function MaintenanceModal({
     serviceDate: new Date().toISOString().split('T')[0],
     odometer: 20000,
     type: 'Oil Change - 5,000 miles',
-    provider: 'Jiffy Lube Fleet Maintenance',
+    provider: 'Metro Precision Collision & Bodywork',
     cost: '',
     invoiceUpload: null,
     invoiceFileName: '',
@@ -112,7 +122,7 @@ export default function MaintenanceModal({
       const odo = firstVeh?.mileage
         ? Number(String(firstVeh.mileage).replace(/[^0-9]/g, ''))
         : 20000;
-      const initialProvider = availableProviders[0] || 'Jiffy Lube Fleet Maintenance';
+      const initialProvider = availableProviders[0] || 'Metro Precision Collision & Bodywork';
 
       setFormData({
         vehicleId: firstVeh?.id || '',
@@ -270,40 +280,36 @@ export default function MaintenanceModal({
             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
               Service Type <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="text"
-              list="service-types"
+            <select
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              placeholder="e.g. Oil Change - 5,000 miles"
-              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8] font-medium"
+              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8] font-bold text-[#0A1E42]"
               required
-            />
-            <datalist id="service-types">
+            >
               {DEFAULT_SERVICE_TYPES.map((st) => (
-                <option key={st} value={st} />
+                <option key={st} value={st}>
+                  {st}
+                </option>
               ))}
-            </datalist>
+            </select>
           </div>
 
           <div>
             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
               Service Provider / Workshop <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="text"
-              list="service-providers"
+            <select
               value={formData.provider}
               onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-              placeholder="e.g. Jiffy Lube Fleet Maintenance"
-              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8] font-medium"
+              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8] font-bold text-[#0A1E42]"
               required
-            />
-            <datalist id="service-providers">
+            >
               {availableProviders.map((sp) => (
-                <option key={sp} value={sp} />
+                <option key={sp} value={sp}>
+                  {sp}
+                </option>
               ))}
-            </datalist>
+            </select>
           </div>
         </div>
 
@@ -330,18 +336,16 @@ export default function MaintenanceModal({
             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
               Service Cost ({getCurrencySymbol()}) <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-xs">{getCurrencySymbol()}</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.cost}
-                onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-                className="w-full pl-7 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8] font-mono font-bold text-[#0A1E42]"
-                required
-              />
-            </div>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              value={formData.cost}
+              onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8] font-mono font-bold text-[#0A1E42]"
+              required
+            />
           </div>
 
           <div>

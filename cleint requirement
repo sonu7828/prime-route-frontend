@@ -1,0 +1,277 @@
+c:\Users\Admin\Downloads\PrimeRoute_Database_Project_Outline (2).pdf
+PRIMEROUTE
+Database & Business Management
+System
+Project Outline for Database Designer / Developer
+Business
+Fleet size
+Users
+Access needs
+PrimeRoute — vehicle leasing, rental, and fleet management
+31–75+ vehicles, with room to scale
+4–10 users, including 2 administrators
+Office and secure remote access
+Preferred tools
+Microsoft Access preferred; open to a better-fit platform
+Purpose: Build a secure, organized system to manage PrimeRoute's vehicles, drivers, rental contracts, documents, financial
+transactions, maintenance, tolls, and business reporting in one coordinated workflow.
+Important: Please review the scope, recommend the right architecture, and provide a phased
+proposal with costs, timeline, security approach, and ongoing expenses before development
+begins.
+1. Project Overview
+PrimeRoute needs a centralized fleet-management and business-operations system. It should be easy for employees to use,
+protect confidential information, maintain reliable history, support accurate financial reporting, and scale as the fleet and
+team grow.
+Preferred approach: Evaluate Microsoft Access as the user interface with a secure SQL Server/Azure SQL backend. Use a
+secured cloud document repository such as SharePoint for files. For full accounting, evaluate dedicated accounting software
+with a planned integration rather than assuming the custom database must rebuild an entire accounting system.
+The developer should recommend the best-fit architecture after confirming costs, user workflow, remote-access needs,
+security requirements, and future growth.
+2. Business and User Requirements
+• Fleet size: 31–75+ vehicles currently/planned; design should support future growth.
+• Users: 4–10 employees, including 2 administrators.
+• Location: Office and remote access.
+• Documents: Stored in a secured cloud repository and linked to records.
+• Accounting: Full accounting needs, including accounts payable, accounts receivable, general ledger, balance sheet, and
+profit-and-loss reporting. Evaluate integration with dedicated accounting software.
+• Notifications: Email and text alerts.
+• Platform: Microsoft Access preferred, but alternatives are acceptable if materially better for security, remote access, and
+growth.
+• Integrations: Not required on day one, but future connections to accounting, banking/payment services, Microsoft 365,
+Excel, and e-signature tools should be considered.
+• Deletion policy: Managers may delete or remove certain operational records only within defined permissions; important
+financial and signed-contract history should be preserved through archiving or auditable corrections.
+3. Required System Modules
+A. Dashboard
+• Fleet totals by status: available, reserved, rented, maintenance, unavailable, sold/retired.
+• Revenue, expenses, operating profit, outstanding balances, unpaid tolls/tickets, upcoming maintenance, and expiring
+documents.
+• Filters for date range, vehicle, driver, and category.
+B. Vehicle management
+• Unique vehicle ID; VIN; license plate; make/model/year/color; mileage; purchase date and price; acquisition/financing details;
+status; location; assigned driver.
+• Track title, registration, insurance, purchase/finance documents, inspection reports, maintenance invoices, accident records,
+warranties, and sale documents.
+• Prevent duplicate VINs and preserve vehicle/driver assignment history.
+C. Driver management
+• Driver ID, name, contact details, license details and expiry, status, start date, current/previous rentals, payment history,
+balances, inspections, accidents, tolls, tickets, and contract history.
+• Restrict access to sensitive personal information and documents.
+Page 2
+PRIMEROUTE  |  DATABASE PROJECT OUTLINE
+D. Rental agreements and scheduling
+• Generate a unique contract number and populate a PrimeRoute template from selected driver, vehicle, dates, rates, deposit,
+mileage, and approved terms.
+• Generate PDF; preserve the exact signed version; track draft, awaiting signature, active, renewed, terminated, and
+completed statuses.
+• Support extensions/amendments and prevent overlapping vehicle assignments.
+• Flag vehicles under maintenance or otherwise unavailable.
+E. Revenue, payments, and driver balances
+• Record rental charges separately from payments received, deposits, refunds, credits, adjustments, and outstanding
+balances.
+• Track dates, methods, references, due dates, payment status, and receipts.
+• Generate driver statements, receipts, overdue reports, and collection reports.
+F. Expense management
+• Record date, category, vehicle, related driver/contract, vendor, description, amount, payment method/status, invoice/receipt,
+entered-by, approver, and notes.
+• Categories include insurance, registration, oil changes, repairs, tires, towing, cleaning, tolls, parking, tickets, marketing,
+software, bank fees, office, legal/accounting, and other costs.
+• Include approvals, duplicate invoice warnings, and auditable corrections.
+G. Vehicle profitability
+• Report rental revenue, operating expenses, insurance, maintenance, repairs, financing costs, depreciation where applicable,
+rental days, downtime, revenue/cost per rental day, and lifetime performance.
+• Clearly distinguish cash flow, operating profit, and accounting profit; confirm accounting rules with PrimeRoute's accountant.
+H. Tolls, tickets, and citations
+• Track vehicle, driver during the relevant rental period, contract, issuing authority, reference number, incurred/received dates,
+amount, due date, payment proof, driver charge/recovery, balance, and status.
+• Support review before assigning responsibility or charging a driver; report overdue and unresolved items.
+I. Maintenance and oil changes
+• Track service date, odometer, service type, provider, cost, invoice, next service mileage/date, and status.
+• Support a 5,000-mile oil-change interval or another interval set by PrimeRoute/manufacturer guidance.
+• Send due/overdue alerts and allow authorized users to mark a vehicle unavailable.
+J. Inspections, damage, and accidents
+• Pickup and return inspections: mileage, fuel, interior/exterior condition, existing/new damage, photos, date/time, inspector,
+and driver acknowledgment.
+• Link damage to estimates, repair invoices, insurance claims, deductible terms, driver charges (where applicable), amounts
+recovered, and resolution.
+K. Insurance and compliance
+• Track insurer, policy, coverage, premium, deductible, effective/expiry dates, documents, claims, and contacts.
+• Alert on expiring insurance, registration, licenses, contracts, and other required documents.
+Page 3
+PRIMEROUTE  |  DATABASE PROJECT OUTLINE
+L. Document management
+• Central repository for titles, registrations, licenses, contracts, inspections, receipts, invoices, insurance, accident records,
+tolls/tickets, and other documents.
+• Store document metadata and link files to the appropriate vehicle, driver, contract, expense, or claim.
+• Enforce permissions in the document repository itself; do not rely only on hidden Access forms or links.
+M. Vendors and employees
+• Vendor directory with services, contact details, invoices, payments, and spending history.
+• Employee roles and access managed only by authorized administrators.
+N. Reports and exports
+• Profit and loss; balance sheet and accounting reports through the accounting system; revenue/expense by vehicle; driver
+statements; receivables/payables; utilization/downtime; maintenance; tolls/tickets; document expiry; contract expiry; vendor
+spending.
+• Authorized export to PDF/Excel; consider Power BI for advanced analytics.
+4. Accounting and Financial Controls
+• PrimeRoute needs full accounting capabilities: accounts payable, accounts receivable, general ledger, balance sheet, and
+profit-and-loss reporting.
+• Please propose whether to integrate a dedicated accounting platform (for example, QuickBooks Online or an equivalent)
+rather than custom-building a complete accounting engine.
+• Define how charges, invoices, payments, deposits, refunds, vendor bills, and adjustments will flow between systems without
+double counting.
+• A refundable security deposit must not automatically be treated as rental revenue.
+• Vehicle purchase costs, loan principal, interest, and depreciation must be treated correctly under the accounting method
+approved by PrimeRoute's accountant.
+• Provide reconciliation procedures and reports that allow financial transactions to be traced back to the original record.
+5. Security, Permissions, and Audit Trail
+The system must use individual accounts and role-based permissions. Security must be enforced by the database backend
+and document repository—not just by hiding buttons or screens.
+Role
+Expected access
+Administrator 1 — Owner
+Administrator 2
+Full business access, user/role management, settings, reporting, and oversight.
+Broad administrative access under an agreed policy; individual account and auditable
+actions.
+Finance employee
+Operational oversight and only specifically authorized approvals, edits, and archive/delete
+actions.
+Approved financial records, expenses, invoices, payments, and finance reports.
+Fleet/maintenance
+employee
+Vehicle records, mileage, maintenance, inspections, repair documents, and vehicle
+status.
+Rental/operations
+employee
+Manager
+Driver records needed for work, contracts, assignments, pickups, returns, and operational
+documents.
+Page 4
+PRIMEROUTE  |  DATABASE PROJECT OUTLINE
+Role
+Read-only user
+Expected access
+View only the data required for the role.
+• Strong authentication and multi-factor authentication where supported.
+• Least-privilege permissions; separate permission to view, add, edit, approve, export, delete/archive, and administer.
+• Encryption in transit and at rest where supported; restricted database and file access; secure remote access; no public
+exposure of the database server.
+• Audit log for record creation/changes, financial edits, approvals, contract generation/amendments, document activity,
+permission changes, archive/deletion, and important administrative actions.
+• Audit entries should include user, date/time, action, record, and prior/new values for important changes where practical.
+Ordinary employees must not be able to edit audit logs.
+• Preserve signed contracts and important financial history. Use documented corrections, reversals, or archiving rather than
+silent overwrites.
+• Define employee onboarding/offboarding, account recovery, incident response, software updates, and access reviews.
+6. Technical Architecture to Evaluate
+Component
+Preferred direction / requirement
+User interface
+Database backend
+Microsoft Access front end if suitable; consider a browser-based application if remote/mobile
+use or security needs make it a better fit.
+Evaluate SQL Server or Azure SQL for central data storage, concurrent use, and
+backend-enforced permissions.
+Documents
+Automated encrypted backups, separate copy, retention policy, documented recovery
+objectives, and tested restoration.
+Evaluate SharePoint or another secured cloud document repository with permissions, version
+history, and appropriate retention.
+Accounting
+Dedicated accounting software integrated now or later; avoid duplicating the official general
+ledger in the custom app without a clear plan.
+Analytics
+Notifications
+Access reports initially; Power BI or equivalent for advanced dashboards if needed.
+Supported email/SMS integration, with configurable recipients and event rules.
+Backups
+Please explain the trade-offs, licensing, security, remote-access experience, operating costs, and scalability of the proposed architecture.
+Do not assume a shared Access file in a cloud-synced folder is a safe remote multiuser database.
+7. Alerts and Automation
+• Email and text alerts for overdue payments, upcoming contract endings, expiring licenses/registration/insurance, oil changes,
+maintenance, unpaid tolls/tickets, missing documents, unresolved accidents, and vehicles awaiting inspection.
+• Configurable lead times, recipients, and alert status to prevent unnecessary repeated messages.
+• Keep a history of important alerts and whether they were resolved.
+8. Database Design and Data Integrity
+• Use a normalized relational design with unique IDs, appropriate relationships, validation, and referential integrity.
+Page 5
+PRIMEROUTE  |  DATABASE PROJECT OUTLINE
+• Separate vehicles, drivers, contracts, assignments, charges, payments, deposits, expenses, vendors, maintenance,
+inspections, claims, tolls/tickets, documents, approvals, users/roles, and audit events into appropriate tables or entities.
+• Preserve historical assignments and transaction records; do not overwrite a previous driver or contract history when a vehicle
+is reassigned.
+• Prevent duplicate VINs and duplicate contract numbers; validate required fields and dates.
+• Include controlled lists for statuses and categories, with administrator-managed configuration where appropriate.
+9. Required Deliverables
+• Working application and configured backend.
+• Database schema, relationship diagram, and technical documentation.
+• Configured administrator and employee roles.
+• PrimeRoute-branded contract, receipt, inspection, and report templates as agreed.
+• Dashboard and required operational/financial reports.
+• Document storage and permission setup.
+• Backup, restore, user onboarding/offboarding, and incident-response instructions.
+• User guide, administrator guide, and staff training.
+• Source files/code created for the project and deployment instructions.
+• Data import/export and migration procedures.
+• List of licenses, integrations, recurring charges, maintenance fees, and support terms.
+• Testing results, including security and user acceptance testing.
+10. Suggested Development Phases
+Phase
+Scope
+1. Discovery and design
+2. Core operations
+Workflow review, database design, permissions, architecture, accounting/reporting plan,
+detailed estimate.
+Vehicles, drivers, contracts, assignments, documents, availability, user roles.
+3. Financial
+management
+Security checks, reconciliation, backup restore test, user training, deployment, acceptance
+sign-off.
+Charges, payments, deposits, expenses, balances, vehicle profitability, accounting
+integration plan.
+4. Fleet operations
+Maintenance, oil changes, inspections, damage, insurance, tolls, tickets.
+5. Automation and
+analytics
+6. Testing and launch
+Email/SMS alerts, dashboards, advanced reports, future integrations.
+11. Acceptance Tests Before Final Payment
+• A duplicate VIN is rejected; a vehicle cannot be assigned to overlapping rentals.
+• Driver and vehicle histories remain intact after reassignment or contract renewal.
+• Contracts populate correctly, signed versions are preserved, and amendments are traceable.
+• Revenue, payments, deposits, expenses, and balances are calculated and classified correctly.
+Page 6
+PRIMEROUTE  |  DATABASE PROJECT OUTLINE
+• Vehicle profitability reports reconcile to source transactions and clearly label the chosen calculation.
+• Tolls/tickets can be matched to the verified rental period and have a review workflow.
+• Maintenance and expiration alerts work as configured.
+• A test employee cannot access restricted data by navigating around the normal interface.
+• Audit logs capture important changes and cannot be altered by ordinary employees.
+• Document access is enforced in the repository itself.
+• Backups can be restored successfully and the process is documented.
+• PrimeRoute can access its data, administrator accounts, documentation, and agreed source files without depending solely
+on the developer.
+12. Please Include These Items in Your Proposal
+• Recommended architecture and why it fits PrimeRoute.
+• Fixed-price estimate or itemized estimate by phase, with assumptions and exclusions.
+• Expected timeline and milestones.
+• One-time implementation cost and recurring license/cloud/SMS/support costs.
+• Security approach, access-control model, audit design, and backup/recovery plan.
+• Accounting software recommendation and integration scope.
+• Remote access and mobile-phone support options.
+• How PrimeRoute will own and control its data, accounts, files, and source code.
+• Training, warranty, maintenance, support response times, and future change-request pricing.
+• Relevant experience with fleet/rental systems, accounting workflows, and secure multiuser applications.
+13. Items to Confirm During Discovery
+• Current accounting software, if any.
+• Whether employees must use the system on phones for photos, inspections, and receipts.
+• Whether weekly rental charges should be generated automatically.
+• Which expense/payment amounts require manager or second-administrator approval.
+• Whether a browser/mobile application is required at launch or only a future option.
+• Exact contract templates, policies, financial categories, notification lead times, and document-retention rules.
+Project success standard
+A secure, maintainable system owned and controlled by PrimeRoute that provides reliable
+fleet, rental, document, and financial records; restricts employee access appropriately;
+preserves audit history; and can scale as the business grows.
+Page 7
+PRIMEROUTE  |  DATABASE PROJECT OUTLINE

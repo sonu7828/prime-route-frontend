@@ -46,7 +46,7 @@ export default function DigitalSignaturePad({
         img.src = initialSignature;
       } else {
         // Plain text signature: render in elegant cursive
-        const displayName = initialSignature.replace(/^e-signed:/i, '').trim() || signerName || 'David Miller';
+        const displayName = initialSignature.replace(/^e-signed:/i, '').trim() || signerName || '';
         ctx.clearRect(0, 0, rect.width, rect.height);
         ctx.font = 'italic 32px "Brush Script MT", "Segoe Script", "Great Vibes", cursive, sans-serif';
         ctx.fillStyle = '#071D49';

@@ -22,8 +22,27 @@ export default function EmployeePaperworkPage() {
 
   // Local editable form state initialized from role context
   const [formData, setFormData] = useState(() => ({
-    personal: { ...(paperworkData?.personal || {}) },
-    employment: { ...(paperworkData?.employment || {}) },
+    personal: {
+      firstName: (paperworkData?.personal?.firstName || '').trim(),
+      lastName: (paperworkData?.personal?.lastName || '').trim(),
+      email: (paperworkData?.personal?.email || '').trim(),
+      phone: (paperworkData?.personal?.phone || '').trim(),
+      dob: paperworkData?.personal?.dob === '2000-01-01' ? '' : (paperworkData?.personal?.dob || '').trim(),
+      address: (paperworkData?.personal?.address || '').trim(),
+      city: (paperworkData?.personal?.city || '').trim(),
+      state: (paperworkData?.personal?.state || '').trim(),
+      zipCode: (paperworkData?.personal?.zipCode || paperworkData?.personal?.zip || '').trim(),
+      emergencyContactName: (paperworkData?.personal?.emergencyContactName || '').trim(),
+      emergencyContactPhone: (paperworkData?.personal?.emergencyContactPhone || '').trim()
+    },
+    employment: {
+      employeeId: paperworkData?.employment?.employeeId || 'PR-EMP-2026-01',
+      position: (paperworkData?.employment?.position || '').trim(),
+      department: (paperworkData?.employment?.department || '').trim(),
+      employmentType: (paperworkData?.employment?.employmentType || '').trim(),
+      joiningDate: (paperworkData?.employment?.joiningDate || '').trim(),
+      assignedManager: (paperworkData?.employment?.assignedManager || '').trim()
+    },
     documents: { ...(paperworkData?.documents || {}) },
     agreements: { ...(paperworkData?.agreements || {}) }
   }));
@@ -32,10 +51,29 @@ export default function EmployeePaperworkPage() {
   useEffect(() => {
     if (paperworkData && paperworkData.personal) {
       setFormData({
-        personal: { ...paperworkData.personal },
-        employment: { ...paperworkData.employment },
-        documents: { ...paperworkData.documents },
-        agreements: { ...paperworkData.agreements }
+        personal: {
+          firstName: (paperworkData.personal.firstName || '').trim(),
+          lastName: (paperworkData.personal.lastName || '').trim(),
+          email: (paperworkData.personal.email || '').trim(),
+          phone: (paperworkData.personal.phone || '').trim(),
+          dob: paperworkData.personal.dob === '2000-01-01' ? '' : (paperworkData.personal.dob || '').trim(),
+          address: (paperworkData.personal.address || '').trim(),
+          city: (paperworkData.personal.city || '').trim(),
+          state: (paperworkData.personal.state || '').trim(),
+          zipCode: (paperworkData.personal.zipCode || paperworkData.personal.zip || '').trim(),
+          emergencyContactName: (paperworkData.personal.emergencyContactName || '').trim(),
+          emergencyContactPhone: (paperworkData.personal.emergencyContactPhone || '').trim()
+        },
+        employment: {
+          employeeId: paperworkData.employment?.employeeId || 'PR-EMP-2026-01',
+          position: (paperworkData.employment?.position || '').trim(),
+          department: (paperworkData.employment?.department || '').trim(),
+          employmentType: (paperworkData.employment?.employmentType || '').trim(),
+          joiningDate: (paperworkData.employment?.joiningDate || '').trim(),
+          assignedManager: (paperworkData.employment?.assignedManager || '').trim()
+        },
+        documents: { ...(paperworkData.documents || {}) },
+        agreements: { ...(paperworkData.agreements || {}) }
       });
     }
   }, [paperworkData]);
@@ -207,7 +245,15 @@ export default function EmployeePaperworkPage() {
         lastUpdated: new Date().toISOString()
       };
       const res = await paperworkApi.savePaperwork(payload);
-      updatePaperwork(res || payload);
+      const mergedData = {
+        ...formData,
+        id: res?.id || paperworkData?.id || 3,
+        submissionId: res?.submissionId || paperworkData?.submissionId || 'PR-SUB-2026-0003',
+        status: 'Draft',
+        lastUpdated: new Date().toISOString()
+      };
+      updatePaperwork(mergedData);
+      localStorage.setItem('primeroute_employee_paperwork', JSON.stringify(mergedData));
       showToast('Draft saved successfully! You can resume filling out this form at any time.', 'success');
     } catch (err) {
       showToast(`Save draft failed: ${err.message}`, 'error');
@@ -220,7 +266,7 @@ export default function EmployeePaperworkPage() {
     if (e && e.preventDefault) e.preventDefault();
 
     // Auto-complete agreements & signature if submitting
-    const signer = `${formData.personal?.firstName || ''} ${formData.personal?.lastName || ''}`.trim() || 'David Miller';
+    const signer = `${formData.personal?.firstName || ''} ${formData.personal?.lastName || ''}`.trim() || 'Employee';
     const finalSignature = formData.agreements?.digitalSignature || `e-signed:${signer}`;
     const updatedAgreements = {
       ...formData.agreements,
@@ -255,7 +301,16 @@ export default function EmployeePaperworkPage() {
       };
 
       const res = await paperworkApi.savePaperwork(payload);
-      updatePaperwork(res || payload);
+      const mergedData = {
+        ...currentFormData,
+        id: res?.id || paperworkData?.id || 3,
+        submissionId: res?.submissionId || paperworkData?.submissionId || 'PR-SUB-2026-0003',
+        status: 'Pending Review',
+        submittedAt: timestamp,
+        lastUpdated: timestamp
+      };
+      updatePaperwork(mergedData);
+      localStorage.setItem('primeroute_employee_paperwork', JSON.stringify(mergedData));
       setIsSubmitSuccessModalOpen(true);
       showToast('✓ Paperwork submitted successfully! Status updated to Pending Review.', 'success');
     } catch (err) {
@@ -265,11 +320,11 @@ export default function EmployeePaperworkPage() {
     }
   };
 
-  // Admin / Manager Review test handlers
+  // Admin / Manager Review handlers
   const handleAdminApprove = async () => {
     try {
       setIsReviewing(true);
-      const notes = adminNotes || 'All onboarding documents verified and accepted by compliance team.';
+      const notes = adminNotes.trim() || 'Paperwork verified and approved.';
       const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 3, 'approve', notes);
       updatePaperwork(res || {
         status: 'Approved',
@@ -287,7 +342,7 @@ export default function EmployeePaperworkPage() {
   const handleAdminReject = async () => {
     try {
       setIsReviewing(true);
-      const notes = adminNotes || 'Please re-upload a clearer copy of your Driving License with expiration date clearly legible.';
+      const notes = adminNotes.trim() || 'Please re-upload clearer copies of your compliance documents.';
       const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 3, 'reject', notes);
       updatePaperwork(res || {
         status: 'Rejected',
@@ -305,12 +360,58 @@ export default function EmployeePaperworkPage() {
   const handleAdminReset = async () => {
     try {
       setIsReviewing(true);
-      const res = await paperworkApi.reviewPaperwork(paperworkData?.id || 3, 'reset', '');
-      updatePaperwork(res || {
-        status: 'Draft',
-        reviewNotes: ''
+      const cleanBlankData = {
+        status: 'Not Started',
+        reviewNotes: '',
+        submittedAt: null,
+        submissionId: 'PR-SUB-2026-0001',
+        lastUpdated: new Date().toISOString(),
+        personal: {
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          dob: '',
+          address: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          emergencyContactName: '',
+          emergencyContactPhone: ''
+        },
+        employment: {
+          employeeId: 'PR-EMP-2026-01',
+          position: '',
+          department: '',
+          employmentType: '',
+          joiningDate: '',
+          assignedManager: ''
+        },
+        documents: {
+          governmentId: null,
+          drivingLicense: null,
+          taxDocuments: null,
+          bankDetails: null,
+          otherDocuments: null
+        },
+        agreements: {
+          codeOfConduct: false,
+          safetyPolicy: false,
+          digitalSignature: null,
+          acceptedTerms: false
+        }
+      };
+
+      await paperworkApi.reviewPaperwork(paperworkData?.id || 1, 'draft', '').catch(() => null);
+      updatePaperwork(cleanBlankData);
+      setFormData({
+        personal: { ...cleanBlankData.personal },
+        employment: { ...cleanBlankData.employment },
+        documents: { ...cleanBlankData.documents },
+        agreements: { ...cleanBlankData.agreements }
       });
-      showToast('Paperwork status reset to Draft for testing.', 'success');
+      localStorage.removeItem('primeroute_employee_paperwork');
+      showToast('Form reset to blank! Ready for client or new applicant.', 'success');
     } catch (err) {
       showToast(`Reset failed: ${err.message}`, 'error');
     } finally {
@@ -387,11 +488,11 @@ export default function EmployeePaperworkPage() {
           activeRoleName={activeRole?.name}
           onApprove={() => {
             setReviewModalState({ isOpen: true, action: 'Approve' });
-            setAdminNotes('All documentation verified. Driver cleared for fleet operations.');
+            setAdminNotes(paperworkData?.reviewNotes || '');
           }}
           onReject={() => {
             setReviewModalState({ isOpen: true, action: 'Reject' });
-            setAdminNotes('Please provide a clearer copy of your Driving License with full expiration date visible.');
+            setAdminNotes(paperworkData?.reviewNotes || '');
           }}
           onReset={handleAdminReset}
         />

@@ -17,6 +17,7 @@ import Modal from '../../../components/common/Modal';
 import { FormInput, FormSelect, FormTextarea } from '../../../components/forms/FormInputs';
 import { formatCurrency, getCurrencySymbol } from '../../../utils/formatters';
 import { useRole } from '../../../context/RoleContext';
+import { settingsApi } from '../../../api/settingsApi';
 
 // The 16 Controlled Categories (Admin-managed controlled list)
 export const EXPENSE_CATEGORIES = [
@@ -88,6 +89,49 @@ export default function ExpenseModal({
   });
 
   const [receiptPreview, setReceiptPreview] = useState(null);
+  const [availableCategories, setAvailableCategories] = useState(EXPENSE_CATEGORIES);
+
+  // Sync dynamic categories from Settings (Database)
+  useEffect(() => {
+    if (isOpen) {
+      settingsApi.getStatusesAndCategories()
+        .then((res) => {
+          if (res && Array.isArray(res.expenseCategories) && res.expenseCategories.length > 0) {
+            // Set of normalized IDs from baseline categories to prevent duplicates
+            const existingKeys = new Set(
+              EXPENSE_CATEGORIES.map((c) => c.id.toLowerCase().replace(/[\s\/\-_]/g, ''))
+            );
+
+            const customList = [];
+            res.expenseCategories.forEach((cat) => {
+              if (!cat || !cat.name) return;
+              const normKey = cat.name.toLowerCase().replace(/[\s\/\-_]/g, '');
+              if (!existingKeys.has(normKey)) {
+                existingKeys.add(normKey);
+                const titleCased = cat.name
+                  .split(' ')
+                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                  .join(' ');
+                const codeTag = cat.code ? ` (${cat.code})` : '';
+                customList.push({
+                  id: cat.name.toLowerCase().trim(),
+                  label: `${titleCased}${codeTag}`
+                });
+              }
+            });
+
+            if (customList.length > 0) {
+              setAvailableCategories([...EXPENSE_CATEGORIES, ...customList]);
+            } else {
+              setAvailableCategories(EXPENSE_CATEGORIES);
+            }
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not load dynamic expense categories from settings:', err);
+        });
+    }
+  }, [isOpen]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -267,7 +311,7 @@ export default function ExpenseModal({
               className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#075EE8]/20 focus:border-[#075EE8] font-medium"
               required
             >
-              {EXPENSE_CATEGORIES.map((cat) => (
+              {availableCategories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.label}
                 </option>

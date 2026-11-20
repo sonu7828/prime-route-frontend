@@ -40,17 +40,32 @@ export const paperworkApi = {
   },
 
   async savePaperwork(payload) {
+    // Map 'Not Started' / 'not_started' safely to 'draft' so MySQL enum doesn't throw 500 error
+    const rawStatus = (payload?.status || 'draft').toLowerCase().replace(/\s+/g, '_');
+    const safeStatus = (rawStatus === 'not_started' || rawStatus === 'pending_review') 
+      ? (rawStatus === 'pending_review' ? 'submitted' : 'draft')
+      : rawStatus;
+
+    const safePayload = {
+      ...payload,
+      status: safeStatus
+    };
+
     const res = await request('/paperwork', {
       method: 'POST',
-      body: JSON.stringify(payload)
+      body: JSON.stringify(safePayload)
     });
     return res.data;
   },
 
   async reviewPaperwork(id, action, notes = '') {
+    // Map 'reset' / 'not_started' to 'draft' for MySQL enum compatibility
+    const act = (action || '').toLowerCase();
+    const safeAction = (act === 'reset' || act === 'not_started') ? 'draft' : act;
+
     const res = await request(`/paperwork/${id}/review`, {
       method: 'PATCH',
-      body: JSON.stringify({ action, notes })
+      body: JSON.stringify({ action: safeAction, notes })
     });
     return res.data;
   }

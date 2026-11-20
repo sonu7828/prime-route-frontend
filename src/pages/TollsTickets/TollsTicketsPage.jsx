@@ -388,15 +388,6 @@ export default function TollsTicketsPage() {
 
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
           <button
-            onClick={() => loadData(false, true)}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all active:scale-95 duration-150 cursor-pointer disabled:opacity-60"
-            title="Refresh from MySQL"
-          >
-            <RotateCcw className={`w-3.5 h-3.5 text-slate-500 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
-          <button
             onClick={handleExport}
             className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all active:scale-95 duration-150 cursor-pointer"
           >

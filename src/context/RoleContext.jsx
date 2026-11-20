@@ -138,6 +138,105 @@ export const ROLES = {
 
 const RoleContext = createContext(null);
 
+function getCleanBlankPaperwork() {
+  return {
+    status: 'Not Started',
+    lastUpdated: null,
+    submittedAt: null,
+    submissionId: 'PR-SUB-2026-0001',
+    reviewNotes: '',
+    personal: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      dob: '',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      emergencyContactName: '',
+      emergencyContactPhone: ''
+    },
+    employment: {
+      employeeId: 'PR-EMP-2026-01',
+      position: '',
+      department: '',
+      employmentType: '',
+      joiningDate: '',
+      assignedManager: ''
+    },
+    documents: {
+      governmentId: null,
+      drivingLicense: null,
+      taxDocuments: null,
+      bankDetails: null,
+      otherDocuments: null
+    },
+    agreements: {
+      codeOfConduct: false,
+      safetyPolicy: false,
+      digitalSignature: null,
+      acceptedTerms: false
+    }
+  };
+}
+
+function sanitizePaperwork(data) {
+  if (!data) return getCleanBlankPaperwork();
+  const personal = data.personal || {};
+  const firstName = (personal.firstName || '').trim();
+  const lastName = (personal.lastName || '').trim();
+  const address = (personal.address || '').trim();
+  const emergencyName = (personal.emergencyContactName || personal.emergencyName || '').trim();
+  const customPolicyText = data.agreements?.customPolicyText !== undefined ? data.agreements.customPolicyText : undefined;
+
+  // If this record contains the legacy David Miller / 742 Evergreen sample test values, discard them
+  const isLegacyDemo =
+    firstName.toLowerCase() === 'david' ||
+    lastName.toLowerCase() === 'miller' ||
+    address.toLowerCase().includes('742 evergreen') ||
+    emergencyName.toLowerCase().includes('sarah miller');
+
+  if (isLegacyDemo) {
+    const blank = getCleanBlankPaperwork();
+    if (customPolicyText !== undefined) {
+      blank.agreements.customPolicyText = customPolicyText;
+    }
+    return blank;
+  }
+
+  return {
+    ...data,
+    personal: {
+      firstName,
+      lastName,
+      email: (personal.email || '').trim(),
+      phone: (personal.phone || '').trim(),
+      dob: personal.dob === '2000-01-01' ? '' : (personal.dob || '').trim(),
+      address,
+      city: (personal.city || '').trim(),
+      state: (personal.state || '').trim(),
+      zipCode: (personal.zipCode || personal.zip || '').trim(),
+      emergencyContactName: emergencyName,
+      emergencyContactPhone: (personal.emergencyContactPhone || personal.emergencyPhone || '').trim()
+    },
+    employment: {
+      employeeId: data.employment?.employeeId || 'PR-EMP-2026-01',
+      position: (data.employment?.position || '').trim(),
+      department: (data.employment?.department || '').trim(),
+      employmentType: (data.employment?.employmentType || '').trim(),
+      joiningDate: (data.employment?.joiningDate || '').trim(),
+      assignedManager: (data.employment?.assignedManager || '').trim()
+    },
+    documents: data.documents || {},
+    agreements: {
+      ...(data.agreements || {}),
+      customPolicyText: customPolicyText !== undefined ? customPolicyText : (data.agreements?.customPolicyText || '')
+    }
+  };
+}
+
 export function RoleProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -176,60 +275,27 @@ export function RoleProvider({ children }) {
   const [paperworkData, setPaperworkData] = useState(() => {
     try {
       const saved = localStorage.getItem('primeroute_employee_paperwork');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const sanitized = sanitizePaperwork(parsed);
+        if (sanitized) {
+          return sanitized;
+        }
+      }
     } catch {
       // fallback
     }
-    return {
-      status: 'Not Started',
-      lastUpdated: null,
-      submittedAt: null,
-      submissionId: 'PR-SUB-2026-8841',
-      reviewNotes: '',
-      personal: {
-        firstName: 'David',
-        lastName: 'Miller',
-        email: 'david.miller@primeroute.io',
-        phone: '+1 (555) 349-1029',
-        dob: '1992-06-14',
-        address: '742 Evergreen Terrace',
-        city: 'Queens',
-        state: 'NY',
-        zipCode: '11375',
-        emergencyContactName: 'Sarah Miller',
-        emergencyContactPhone: '+1 (555) 902-4821'
-      },
-      employment: {
-        employeeId: 'PR-EMP-2026',
-        position: 'Logistics Fleet Driver',
-        department: 'Fleet Operations',
-        employmentType: 'Full-Time',
-        joiningDate: '2026-03-01',
-        assignedManager: 'Elena Vance'
-      },
-      documents: {
-        governmentId: { name: 'US_Passport_DMiller.pdf', size: '2.4 MB', uploadedAt: '2026-11-04' },
-        drivingLicense: { name: 'NY_Driver_License_ClassD.pdf', size: '1.8 MB', uploadedAt: '2026-11-04' },
-        taxDocuments: null,
-        bankDetails: null,
-        otherDocuments: null
-      },
-      agreements: {
-        codeOfConduct: false,
-        safetyPolicy: false,
-        digitalSignature: null,
-        acceptedTerms: false
-      }
-    };
+    return getCleanBlankPaperwork();
   });
 
-  // Load live paperwork data from MySQL on mount
+  // Load live paperwork data from API on mount
   useEffect(() => {
     let isMounted = true;
     paperworkApi.getPaperwork()
       .then((data) => {
         if (isMounted && data) {
-          setPaperworkData(data);
+          const sanitized = sanitizePaperwork(data);
+          setPaperworkData(sanitized);
         }
       })
       .catch((err) => {
