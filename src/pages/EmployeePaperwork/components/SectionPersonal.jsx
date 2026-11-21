@@ -36,7 +36,6 @@ export default function SectionPersonal({ formData, errors = {}, onPersonalChang
             type="text"
             value={personal.firstName || ''}
             onChange={(e) => handleChange?.('firstName', e.target.value)}
-            placeholder="e.g. David"
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.firstName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
@@ -53,7 +52,6 @@ export default function SectionPersonal({ formData, errors = {}, onPersonalChang
             type="text"
             value={personal.lastName || ''}
             onChange={(e) => handleChange?.('lastName', e.target.value)}
-            placeholder="e.g. Miller"
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.lastName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
@@ -70,7 +68,6 @@ export default function SectionPersonal({ formData, errors = {}, onPersonalChang
             type="email"
             value={personal.email || ''}
             onChange={(e) => handleChange?.('email', e.target.value)}
-            placeholder="david.miller@primeroute.io"
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.email ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
@@ -87,7 +84,6 @@ export default function SectionPersonal({ formData, errors = {}, onPersonalChang
             type="tel"
             value={personal.phone || ''}
             onChange={(e) => handleChange?.('phone', e.target.value)}
-            placeholder="+1 (555) 349-1029"
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.phone ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
@@ -120,7 +116,6 @@ export default function SectionPersonal({ formData, errors = {}, onPersonalChang
             type="text"
             value={personal.address || ''}
             onChange={(e) => handleChange?.('address', e.target.value)}
-            placeholder="742 Evergreen Terrace, Apt 4B"
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.address ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
@@ -137,7 +132,6 @@ export default function SectionPersonal({ formData, errors = {}, onPersonalChang
             type="text"
             value={personal.city || ''}
             onChange={(e) => handleChange?.('city', e.target.value)}
-            placeholder="Queens"
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.city ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
@@ -154,7 +148,6 @@ export default function SectionPersonal({ formData, errors = {}, onPersonalChang
             type="text"
             value={personal.state || ''}
             onChange={(e) => handleChange?.('state', e.target.value)}
-            placeholder="NY"
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.state ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
@@ -171,7 +164,6 @@ export default function SectionPersonal({ formData, errors = {}, onPersonalChang
             type="text"
             value={personal.zipCode || ''}
             onChange={(e) => handleChange?.('zipCode', e.target.value)}
-            placeholder="11375"
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.zipCode ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
@@ -188,7 +180,6 @@ export default function SectionPersonal({ formData, errors = {}, onPersonalChang
             type="text"
             value={personal.emergencyContactName || ''}
             onChange={(e) => handleChange?.('emergencyContactName', e.target.value)}
-            placeholder="e.g. Sarah Miller (Spouse)"
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.emergencyContactName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}
@@ -207,7 +198,6 @@ export default function SectionPersonal({ formData, errors = {}, onPersonalChang
             type="tel"
             value={personal.emergencyContactPhone || ''}
             onChange={(e) => handleChange?.('emergencyContactPhone', e.target.value)}
-            placeholder="+1 (555) 902-4821"
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs border transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[#075EE8]/20 ${
               errors.emergencyContactPhone ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-[#075EE8]'
             }`}

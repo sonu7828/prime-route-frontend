@@ -52,7 +52,7 @@ export default function InspectionDetailsModal({
                 <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
                   <span>Assigned Driver: <strong>{inspection.driver}</strong></span>
                   <span>•</span>
-                  <span>Contract: <strong>{inspection.contractId || 'RNT-2025-001'}</strong></span>
+                  <span>Contract: <strong>{inspection.contractId || 'N/A'}</strong></span>
                 </p>
               </div>
             </div>

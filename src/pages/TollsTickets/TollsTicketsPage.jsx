@@ -372,9 +372,6 @@ export default function TollsTicketsPage() {
             <span className="text-xs font-bold px-3 py-1 rounded-xl bg-blue-50 text-[#075EE8] border border-blue-100 shadow-2xs">
               {stats.totalTickets} Municipal Records
             </span>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Live MySQL Connected
-            </span>
             {stats.overdueCount > 0 && (
               <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 animate-pulse">
                 ⚠️ {stats.overdueCount} Overdue Citations
@@ -387,15 +384,6 @@ export default function TollsTicketsPage() {
         </div>
 
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-          <button
-            onClick={() => loadData(false, true)}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all active:scale-95 duration-150 cursor-pointer disabled:opacity-60"
-            title="Refresh from MySQL"
-          >
-            <RotateCcw className={`w-3.5 h-3.5 text-slate-500 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
           <button
             onClick={handleExport}
             className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all active:scale-95 duration-150 cursor-pointer"
