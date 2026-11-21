@@ -372,9 +372,6 @@ export default function TollsTicketsPage() {
             <span className="text-xs font-bold px-3 py-1 rounded-xl bg-blue-50 text-[#075EE8] border border-blue-100 shadow-2xs">
               {stats.totalTickets} Municipal Records
             </span>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Live MySQL Connected
-            </span>
             {stats.overdueCount > 0 && (
               <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 animate-pulse">
                 ⚠️ {stats.overdueCount} Overdue Citations

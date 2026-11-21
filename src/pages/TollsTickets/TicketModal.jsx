@@ -665,8 +665,8 @@ export default function TicketModal({
               {isSubmitting
                 ? 'Saving to Database...'
                 : isEditing
-                ? 'Save Citation Updates'
-                : 'Record Violation Notice'}
+                  ? 'Save Citation Updates'
+                  : 'Record Violation Notice'}
             </span>
           </button>
         </div>
