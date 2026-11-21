@@ -457,22 +457,38 @@ export default function LoginPage({ onLogin }) {
                 </label>
               </div>
 
-              {/* Quick Login Helper Chips so credentials are never forgotten */}
-              <div className="pt-1 pb-1">
-                <p className="text-[11px] font-semibold text-slate-500 mb-1.5">Quick Fill Demo Accounts:</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('marcus.brody@primeroute.io');
-                      setPassword('password123');
-                    }}
-                    className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors cursor-pointer"
-                  >
-                    Owner (Marcus Brody)
-                  </button>
-                 
-                </div>
+              {/* Quick Login Auto-Fill Button */}
+              <div className="pt-1.5 pb-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('marcus.brody@primeroute.io');
+                    setPassword('Password123!');
+                    setEmailError('');
+                    setPasswordError('');
+                  }}
+                  className="w-full py-2.5 px-3 bg-gradient-to-r from-blue-50 via-indigo-50/70 to-blue-50 hover:from-blue-100 hover:via-indigo-100 hover:to-blue-100 border border-blue-200/90 rounded-xl flex items-center justify-between text-left transition-all duration-150 cursor-pointer shadow-xs group"
+                  title="Click to auto-fill Marcus Brody Owner credentials"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-[#075EE8]/10 text-[#075EE8] flex items-center justify-center font-bold">
+                      <Zap className="w-4 h-4 fill-[#075EE8]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <span>Click to Fill ID & Pass</span>
+                        <span className="text-[10px] px-1.5 py-0.5 font-bold bg-[#075EE8] text-white rounded">Auto-Fill</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                        marcus.brody@primeroute.io <span className="text-slate-400 font-sans">• Owner</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-[11px] font-bold text-[#075EE8] group-hover:translate-x-0.5 transition-transform flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200/80 shadow-2xs">
+                    <span>Fill</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </div>
+                </button>
               </div>
 
               {/* PRIMARY LOGIN BUTTON */}
